@@ -32,7 +32,8 @@
   --linked-indent: 30px;
   --linked-icon: 30px;
   --effect-icon: 18px;
-  --socket-size: 58px;         /* the gem's rarity ring */
+  --halo-size: 62px;           /* layout cell around the gem */
+  --gem-ring: 0 0 0 1.5px rgba(255,255,255,.7);  /* thin white-ish border separating the gem from any panel color */
   --medal-size: 44px;
   --hud-slot: 18px;
   --bench-gem: 42px;
@@ -51,12 +52,12 @@
   --type-utility: #4a78d8, #1f3477;
   --type-space: #8a5ad8, #3c1f78;
 
-  /* Gem RARITY = light rays behind the panel plus a matching metallic ring around the gem
-     (common: neither, rare: silver, epic: gold). The ring is radial bands (light → dark = bevel), open center. */
-  --rare-ring: radial-gradient(closest-side, transparent 86%, #f4f7fa 88%, #aeb8c4 93%, #6f7a86 97%, transparent 100%);
-  --rare-ring-glow: 0 0 8px rgba(225,238,255,.5);
-  --epic-ring: radial-gradient(closest-side, transparent 86%, #fff1a6 88%, #f2c230 93%, #9c6a0a 97%, transparent 100%);
-  --epic-ring-glow: 0 0 9px rgba(255,196,50,.5);
+  /* Gem RARITY = light rays behind the panel (common none, rare silver, epic gold),
+     echoed by a soft glow around the gem icon */
+  --common-gem-glow: drop-shadow(0 0 3px rgba(255,255,255,.55));
+  --rare-gem-glow: drop-shadow(0 0 7px rgba(225,238,255,.85));
+  --epic-gem-glow: drop-shadow(0 0 8px rgba(255,200,70,.9));
+  --gem-shadow: drop-shadow(0 3px 4px rgba(0,0,0,.85));
   --rare-ray-rgb: 228, 238, 252;     --rare-ray-glow-rgb: 205, 220, 240;
   --epic-ray-rgb: 255, 214, 110;     --epic-ray-glow-rgb: 255, 190, 60;
   --ray-count: 16;             /* read by script */
@@ -153,8 +154,8 @@ img { display: block; }
 .dock[data-type="time"]        { --fill: var(--type-time); }
 .dock[data-type="utility"]     { --fill: var(--type-utility); }
 .dock[data-type="space"]       { --fill: var(--type-space); }
-.dock[data-tier="2"] { --rarity-c: var(--c-rarity-rare); --ring: var(--rare-ring); --ring-glow: var(--rare-ring-glow); }
-.dock[data-tier="3"] { --rarity-c: var(--c-rarity-epic); --ring: var(--epic-ring); --ring-glow: var(--epic-ring-glow); }
+.dock[data-tier="2"] { --rarity-c: var(--c-rarity-rare); --gem-glow: var(--rare-gem-glow); }
+.dock[data-tier="3"] { --rarity-c: var(--c-rarity-epic); --gem-glow: var(--epic-gem-glow); }
 
 /* ── Rarity effect behind the panel (mock-up of the in-engine particles): light rays fanning out and turning
       slowly, silver for rare and gold for epic. Each ray is a wedge whose gradient fades along its length
@@ -211,23 +212,22 @@ img { display: block; }
 .header { height: var(--header-h); display: grid; grid-template-columns: var(--crest-w) 1fr; pointer-events: none; }
 /* Crest: the gem and its name in one piece */
 .crest {
-  display: grid; grid-template-columns: var(--socket-size) 1fr; align-items: center; gap: 4px;
+  display: grid; grid-template-columns: var(--halo-size) 1fr; align-items: center; gap: 4px;
   /* the visible header runs down to the first row, so center in that span (header + slab padding) */
   padding: var(--slab-pad) calc(var(--crest-slope) + 4px) 0 calc(var(--crest-slope) + 4px);
 }
-/* rarity ring around the gem (rare/epic only); empty on common */
-.socket {
-  width: var(--socket-size); height: var(--socket-size);
+/* Making the gem the most eye-catching thing in the panel:
+   a thin white-ish border (neutral, so it reads the same on every tinted panel),
+   a rarity glow and a contact shadow */
+.halo {
+  width: var(--halo-size); height: var(--halo-size);
   display: grid; place-items: center;
-  border-radius: 50%;
-  background: var(--ring, none);
-  box-shadow: var(--ring-glow, none);
 }
 .medal {
   width: var(--medal-size); height: var(--medal-size);
   border-radius: 50%;
-  /* a white rim light and a dark contact shadow lift the gem off any panel color */
-  filter: drop-shadow(0 0 3px rgba(255,255,255,.55)) drop-shadow(0 2px 3px rgba(0,0,0,.85));
+  box-shadow: var(--gem-ring);
+  filter: var(--gem-glow, var(--common-gem-glow)) var(--gem-shadow);
 }
 .crest__title { text-align: center; color: #f6f3ec; text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 6px rgba(0,0,0,.6); }
 .crest__title h1 { margin: 0; font-size: var(--fs-title); white-space: nowrap; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; line-height: 1; }
@@ -371,6 +371,7 @@ img { display: block; }
 }
 .demo__label { flex-basis: 100%; text-transform: uppercase; letter-spacing: .08em; font-size: 12px; color: var(--c-text-dim); }
 .demo button { padding: 6px 12px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.35); border-radius: 4px; }
+.demo__link { color: var(--c-gold-hi); text-decoration: underline; }
 .demo__log { flex-basis: 100%; margin: 0; min-height: 1.3em; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -393,7 +394,7 @@ img { display: block; }
 
     <header class="header">
       <div class="crest">
-        <div class="socket"><img class="medal" src="assets/t1_fortune.png" alt=""></div>
+        <div class="halo"><img class="medal" src="assets/t1_fortune.png" alt=""></div>
         <div class="crest__title">
           <h1 id="gem-name" data-bind="gemName"></h1>
           <p>(<span data-bind="rarity"></span>)</p>
@@ -425,6 +426,7 @@ img { display: block; }
     <label><input type="checkbox" name="supporter" checked> Supporter</label>
     <button data-action="forceUpgrade">Force an upgrade</button>
     <button data-action="replay">Reset demo</button>
+    <a class="demo__link" href="assets.html" target="_blank" rel="noopener">Asset list</a>
     <p class="demo__log" data-bind="log" aria-live="polite"></p>
   </aside>
 </main>

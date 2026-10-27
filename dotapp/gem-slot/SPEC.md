@@ -20,8 +20,10 @@ The panel is a **stone slab docked flush to the right screen edge**, so it reads
 
   Each piece casts `--layer-shadow` (a short downward drop shadow) onto the piece behind it, and each lower tier is a little darker (`--shade`), so the brace reads as stacked slabs rather than one cut rock.
 - **Crest:** the gem and its name share one trapezoid (`--crest-w` wide, sides angled over `--crest-slope`) that rises above the slab.
-  - The gem sits directly on the crest, with no socket art behind it. On rare and epic it is framed by the rarity ring (see Rarity).
-  - The gem is the most prominent element. It has a white rim light and a dark contact shadow, so it separates from every panel color, including same-hue cases like a fortune gem on its yellow panel.
+  - The gem is the most prominent element. Three subtle layers separate it from every panel color, including same-hue cases like a Fortune gem on its yellow panel:
+    1. a **thin white-ish border** around the icon (`--gem-ring`, 1.5px at 70% white). It's neutral, so it reads the same on every tinted panel. Soft halos behind the gem were tried and dropped: dark ones muddied the tints, light ones read as a smudge or glared.
+    2. a **glow** on the icon, tinted by rarity (`--common/rare/epic-gem-glow`)
+    3. a **contact shadow** below it (`--gem-shadow`)
   - The socket and labels are vertically centered on the visible header, which runs from the crest's top to the first row (header + slab padding).
 - **Dice tab:** the gold reroll tab sits **behind** the crest. The crest's right slope overlaps its left end and shades it, and its bottom tucks into the slab.
 - **Brace:** a **stepped corbel** under the slab, wedged into the screen edge: two tiers (`--brace-tier` each), each starting with a diagonal cut (`--brace-cut`). The lower tier starts `--brace-step` in from the brace's left edge, leaving a short ledge. It is `--brace-w` wide at the top.
@@ -35,17 +37,17 @@ The panel is a **stone slab docked flush to the right screen edge**, so it reads
   | power | red | mobility | orange | time | cyan |
   | protection | gray | vitality | green | utility | blue |
   | destruction | pink | fortune | yellow | space | purple |
-- **Rarity** (switched by `data-tier` on `.dock`) shows as **light rays behind the panel** plus a matching **metallic ring around the gem**:
+- **Rarity** (switched by `data-tier` on `.dock`) shows as **light rays behind the panel**, echoed by the gem's glow color:
 
-  | | Behind the panel | Ring around the gem (`--socket-size`) |
+  | | Behind the panel | Gem glow |
   |---|---|---|
-  | common | nothing | none |
-  | rare | silver light rays (`--rare-ray-*`) | silver ring + soft glow (`--rare-ring`, `--rare-ring-glow`) |
-  | epic | gold light rays (`--epic-ray-*`) | gold ring + soft glow (`--epic-ring`, `--epic-ring-glow`) |
+  | common | nothing | white rim light |
+  | rare | silver light rays (`--rare-ray-*`) | soft silver |
+  | epic | gold light rays (`--epic-ray-*`) | soft gold |
 
-  The ring has an open center. It's drawn as radial bands, light to dark, so it reads as bevelled metal. The rarity word under the gem name takes the same color. The panel and the rows look the same at every rarity.
+  The rarity word under the gem name takes the same color. The panel and the rows look the same at every rarity. The gem art carries rarity too: epic icons have a slim gold rim, rare icons a silver one.
 
-  Dropped along the way: outlines around the whole panel and around each row (the rays made them redundant), and the `forge_socket` art behind the gem (it muddied the gem).
+  Dropped along the way: outlines around the whole panel and around each row (the rays made them redundant), the `forge_socket` art behind the gem (it muddied the gem), and a metallic ring around the gem (it doubled up the gem art's own rim).
 
   The **light rays** are a mock-up of the in-engine particle effect. There are `--ray-count` wedges (16) fanning out from the panel's center over a soft glow, each fading along its length, the whole set turning once every `--t-rays` (24 s), blended additively (`screen`). They show where the panel doesn't cover them: left, above and below.
 
@@ -163,6 +165,8 @@ Mirroring the tile makes the line art symmetric, a soft diamond rhythm that most
 Not used: `bench_bg`, `bench_header`, `choice_bg` (they were per-piece skins, which caused seams between pieces), `glow`, `sub_bg_*`, the `forge_*` / `trash*` / `reset` / `stone_button` / `button_cancel|confirm` / `mouse_*` art, and the earlier ChatGPT renders (`stone_texture_0*`, `metal_texture_0*`).
 
 ## Assets
+
+Full file list with links: [assets.html](assets.html) (also linked from the prototype controls).
 
 | File | Status |
 |---|---|

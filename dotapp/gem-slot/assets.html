@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gem Slot · Assets</title>
+<style>
+:root { --bg: #15171a; --card: #1f2226; --line: #33383e; --text: #ece8df; --text-dim: #a9adb3; --accent: #f5c22b; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, sans-serif; }
+main { max-width: 900px; margin: 0 auto; padding: 40px 16px; }
+h1 { margin: 0 0 4px; font-size: 26px; }
+.intro { margin: 0 0 28px; color: var(--text-dim); }
+h2 { margin: 28px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent); }
+table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); }
+td { padding: 8px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+td:first-child { width: 30%; }
+.size { width: 22%; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+img { width: 28px; height: 28px; object-fit: contain; vertical-align: middle; margin-right: 8px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.dim { color: var(--text-dim); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Gem Slot: assets</h1>
+  <p class="intro">Every file the prototype uses. Panel frames, bevels and wells are CSS geometry, not art. Sizes are display sizes in px on the 1920×1080 stage, not the source files' resolution. <a href="./">Back to prototype</a></p>
+
+  <h2>Gem icons</h2>
+  <table>
+    <tr><td><code>t{tier}_{type}.png</code></td><td>The gem in the crest, in slots and on the bench. Tier 1 = common, 2 = rare, 3 = epic. Types: destruction, fortune, mobility, power, protection, space, time, utility, vitality.</td><td class="size"></td></tr>
+    <tr><td><img src="assets/t1_power.png" alt=""><a href="assets/t1_power.png">t1_*.png</a></td><td>Common: <a href="assets/t1_destruction.png">destruction</a> · <a href="assets/t1_fortune.png">fortune</a> · <a href="assets/t1_mobility.png">mobility</a> · <a href="assets/t1_power.png">power</a> · <a href="assets/t1_protection.png">protection</a> · <a href="assets/t1_space.png">space</a> · <a href="assets/t1_time.png">time</a> · <a href="assets/t1_utility.png">utility</a> · <a href="assets/t1_vitality.png">vitality</a></td><td class="size">44×44 crest · 22×22 ability slot · 42×42 bench · 18×18 HUD slot</td></tr>
+    <tr><td><img src="assets/t2_power.png" alt=""><a href="assets/t2_power.png">t2_*.png</a></td><td>Rare: <a href="assets/t2_destruction.png">destruction</a> · <a href="assets/t2_fortune.png">fortune</a> · <a href="assets/t2_mobility.png">mobility</a> · <a href="assets/t2_power.png">power</a> · <a href="assets/t2_protection.png">protection</a> · <a href="assets/t2_space.png">space</a> · <a href="assets/t2_time.png">time</a> · <a href="assets/t2_utility.png">utility</a> · <a href="assets/t2_vitality.png">vitality</a></td><td class="size">44×44 crest · 22×22 ability slot · 42×42 bench · 18×18 HUD slot</td></tr>
+    <tr><td><img src="assets/t3_power.png" alt=""><a href="assets/t3_power.png">t3_*.png</a></td><td>Epic: <a href="assets/t3_destruction.png">destruction</a> · <a href="assets/t3_fortune.png">fortune</a> · <a href="assets/t3_mobility.png">mobility</a> · <a href="assets/t3_power.png">power</a> · <a href="assets/t3_protection.png">protection</a> · <a href="assets/t3_space.png">space</a> · <a href="assets/t3_time.png">time</a> · <a href="assets/t3_utility.png">utility</a> · <a href="assets/t3_vitality.png">vitality</a></td><td class="size">44×44 crest · 22×22 ability slot · 42×42 bench · 18×18 HUD slot</td></tr>
+    <tr><td><img src="assets/gem_slot.png" alt=""><a href="assets/gem_slot.png">gem_slot.png</a></td><td>Empty gem slot under each ability.</td><td class="size">22×22 ability slot · 18×18 HUD slot</td></tr>
+  </table>
+
+  <h2>Ability icons</h2>
+  <table>
+    <tr><td><img src="assets/ether-shock.png" alt=""><a href="assets/ether-shock.png">ether-shock.png</a></td><td>Ether Shock row icon.</td><td class="size">68×68</td></tr>
+    <tr><td><img src="assets/hex.png" alt=""><a href="assets/hex.png">hex.png</a></td><td>Hex row icon.</td><td class="size">68×68</td></tr>
+    <tr><td><img src="assets/fowl-play.png" alt=""><a href="assets/fowl-play.png">fowl-play.png</a></td><td>Fowl Play, the linked ability shown in Hex's drawer.</td><td class="size">30×30</td></tr>
+    <tr><td><img src="assets/shackles.png" alt=""><a href="assets/shackles.png">shackles.png</a></td><td>Shackles row icon.</td><td class="size">68×68</td></tr>
+    <tr><td><img src="assets/mass-serpent-ward.png" alt=""><a href="assets/mass-serpent-ward.png">mass-serpent-ward.png</a></td><td>Mass Serpent Ward (ultimate) row icon.</td><td class="size">68×68</td></tr>
+  </table>
+
+  <h2>Skins and textures</h2>
+  <table>
+    <tr><td><img src="assets/cross_texture_tile.png" alt=""><a href="assets/cross_texture_tile.png">cross_texture_tile.png</a></td><td>Panel fill texture, multiplied over the gem-type colour gradient. A mirrored tile of the game's <code>cross_texture.png</code>, drawn at half size.</td><td class="size">656×389 tile, repeated</td></tr>
+    <tr><td><img src="assets/button_base.png" alt=""><a href="assets/button_base.png">button_base.png</a></td><td>9-slice skin for the Later/Gems tab and the "Send gem to bench" button (darkened).</td><td class="size">9-slice, 3px border: 107×34 Later tab · 416×42 bench button</td></tr>
+    <tr><td><img src="assets/button_active.png" alt=""><a href="assets/button_active.png">button_active.png</a></td><td>9-slice gold skin for the dice (reroll) tab behind the crest.</td><td class="size">9-slice, 3px border: 134×60 dice tab</td></tr>
+  </table>
+
+  <h2>Placeholders</h2>
+  <table>
+    <tr><td><img src="assets/dice.png" alt=""><a href="assets/dice.png">dice.png</a></td><td>Dice currency icon on the reroll tab. <span class="dim">Placeholder.</span></td><td class="size">32×32</td></tr>
+    <tr><td><img src="assets/effect-mana.png" alt=""><a href="assets/effect-mana.png">effect-mana.png</a></td><td>Effect-line icon (mana effects). <span class="dim">Placeholder.</span></td><td class="size">18×18</td></tr>
+    <tr><td><img src="assets/effect-heal.png" alt=""><a href="assets/effect-heal.png">effect-heal.png</a></td><td>Effect-line icon (heal effects). <span class="dim">Placeholder.</span></td><td class="size">18×18</td></tr>
+    <tr><td><img src="assets/effect-hp.png" alt=""><a href="assets/effect-hp.png">effect-hp.png</a></td><td>Effect-line icon (HP effects). <span class="dim">Placeholder.</span></td><td class="size">18×18</td></tr>
+  </table>
+
+  <h2>Prototype only</h2>
+  <table>
+    <tr><td><a href="context-ingame.webp">context-ingame.webp</a></td><td>In-game screenshot used as the stage background. Not part of the UI.</td><td class="size">1920×1080 stage</td></tr>
+    <tr><td><a href="reference.webp">reference.webp</a></td><td>Original concept image, kept for comparison. Not used by the page.</td><td class="size">—</td></tr>
+  </table>
+</main>
+</body>
+</html>
