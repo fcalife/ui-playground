@@ -20,17 +20,36 @@ The panel is a **stone slab docked flush to the right screen edge**, so it reads
 
   Each piece casts `--layer-shadow` (a short downward drop shadow) onto the piece behind it, and each lower tier is a little darker (`--shade`), so the brace reads as stacked slabs rather than one cut rock.
 - **Crest:** the gem and its name share one trapezoid (`--crest-w` wide, sides angled over `--crest-slope`) that rises above the slab.
+  - The gem sits directly on the crest, with no socket art behind it. On rare and epic it is framed by the rarity ring (see Rarity).
+  - The gem is the most prominent element. It has a white rim light and a dark contact shadow, so it separates from every panel color, including same-hue cases like a fortune gem on its yellow panel.
+  - The socket and labels are vertically centered on the visible header, which runs from the crest's top to the first row (header + slab padding).
 - **Dice tab:** the gold reroll tab sits **behind** the crest. The crest's right slope overlaps its left end and shades it, and its bottom tucks into the slab.
 - **Brace:** a **stepped corbel** under the slab, wedged into the screen edge: two tiers (`--brace-tier` each), each starting with a diagonal cut (`--brace-cut`). The lower tier starts `--brace-step` in from the brace's left edge, leaving a short ledge. It is `--brace-w` wide at the top.
 - The whole panel also casts a drop shadow onto the game, to the left.
-- **Rows are depressions** carved into the slab: a translucent dark fill with an inner shadow and a faint lower lip, like the Gems Bench's storage well. Being translucent, they carry a hint of the tier color. The linked drawer is a deeper depression.
-- The bottom button uses the game's blue button skin, hue-shifted to **teal**, a hue no tier uses, so it stays distinct on every tier.
-- **Tier material:** each piece's fill is a vertical gradient in the tier's colors, multiplied by the game's `cross_texture` line art (the same treatment as the orb bars in the earlier game). The rim and title color follow the tier. The colors follow the usual Dota/MMO rarity convention, which is also what the orb UI uses:
-  - common: dark slate
-  - rare: blue, with a diagonal sheen
-  - epic: purple, with the same sheen
+- **Rows are depressions** carved into the slab: a translucent dark fill with an inner shadow and a faint lower lip, like the Gems Bench's storage well. Being translucent, they carry a hint of the panel color. The linked drawer is a deeper depression.
+- The bottom button is **dark neutral stone**: the game's base button skin, darkened to near the Gems Bench's own color. It has no hue, so it never clashes with a gem type's panel (blue clashed with Utility, teal with Time). It reads as a raised button against the sunken rows.
+- **Color = gem type.** Each piece's fill is a vertical gradient in the gem type's color, multiplied by the game's `cross_texture` line art (the same treatment as the orb bars in the earlier game). The hues come from the gem art (`--type-*` tokens, switched by `data-type` on `.dock`):
 
-  The tokens are `--common-*`, `--rare-*` and `--epic-*` (`fill`, `rim`, `title`), plus `--sheen-shiny`.
+  | Type | Color | Type | Color | Type | Color |
+  |---|---|---|---|---|---|
+  | power | red | mobility | orange | time | cyan |
+  | protection | gray | vitality | green | utility | blue |
+  | destruction | pink | fortune | yellow | space | purple |
+- **Rarity** (switched by `data-tier` on `.dock`) shows as **light rays behind the panel** plus a matching **metallic ring around the gem**:
+
+  | | Behind the panel | Ring around the gem (`--socket-size`) |
+  |---|---|---|
+  | common | nothing | none |
+  | rare | silver light rays (`--rare-ray-*`) | silver ring + soft glow (`--rare-ring`, `--rare-ring-glow`) |
+  | epic | gold light rays (`--epic-ray-*`) | gold ring + soft glow (`--epic-ring`, `--epic-ring-glow`) |
+
+  The ring has an open center. It's drawn as radial bands, light to dark, so it reads as bevelled metal. The rarity word under the gem name takes the same color. The panel and the rows look the same at every rarity.
+
+  Dropped along the way: outlines around the whole panel and around each row (the rays made them redundant), and the `forge_socket` art behind the gem (it muddied the gem).
+
+  The **light rays** are a mock-up of the in-engine particle effect. There are `--ray-count` wedges (16) fanning out from the panel's center over a soft glow, each fading along its length, the whole set turning once every `--t-rays` (24 s), blended additively (`screen`). They show where the panel doesn't cover them: left, above and below.
+
+  The rarity word under the gem name takes the outline's color (`--c-rarity-*`).
 
 ## Anatomy
 
@@ -91,7 +110,7 @@ Input is locked only during a slide-out.
 | `choosing` | Panel opens (new gem) / reroll ends / cancel / back from LATER | Rows show hover feedback: the depression lightens. Every control is enabled. | `leaving`, `picking`, `rerolling`, `deferred` |
 | — | **Click an ability (or its linked drawer) that has a free slot** | The gem goes into its first free slot, the HUD shows it at once, and the panel slides out. | `leaving` |
 | `leaving` | Any resolution | Input locks. The panel slides out to the right, then the next gem's panel slides in. | `choosing` |
-| `picking` | **Click an ability whose slots are all full** | That row gets a dark gold fill and a gold inner border. Its text becomes "*{Ability} is full* / **WHICH SLOT?** / Click a gem to swap it out…". Its slotted gems become buttons, and hovering one previews the new gem in its place. The other rows dim but stay clickable. | see below |
+| `picking` | **Click an ability whose slots are all full** | That row gets a dark gold fill and a gold inner border. Its text becomes a single heading, **ALL SLOTS FULL**, with the hint "Click a gem to bench it and slot this one in its place." Its slotted gems become buttons, and hovering one previews the new gem in its place. The other rows dim but stay clickable. | see below |
 | — | **Click one of the picking row's gems** | The new gem takes that slot. The old gem **flies from that slot into the bench**. | `leaving` |
 | — | **Click another ability** while picking | Behaves like a normal click on that ability. | `leaving` / `picking` |
 | — | **Click the picking row again, or Esc** | Cancels. | `choosing` |
@@ -102,6 +121,16 @@ Input is locked only during a slide-out.
 
 `n` is the number of gems awaiting a decision. The prototype keeps it at 1.
 
+### Supporter bonus
+
+Supporters have a **25% chance** (`supporterUpgradeChance` in the data) that a newly gained gem arrives **upgraded one tier**: common → rare, or rare → epic. Epic gems can't be upgraded.
+
+| State | Entered by | What happens | Exits to |
+|---|---|---|---|
+| `upgrading` | A new gem arrives and the bonus triggers | The panel slides in showing the **original** rarity, which holds for `--t-upgrade-hold` (250 ms). Then a white **flash** washes over the main piece (`--t-flash`, 360 ms). At its peak the panel switches to the upgraded rarity: the outline, the rarity label, the medal icon (with a quick pop) and the effect values all change. The notice **"Supporter bonus activated! Gem upgraded."** appears at the top of the slab. Input is locked for this ~0.4 s reveal. | `choosing` |
+
+The notice stays visible while the upgraded gem is on offer, including after LATER → GEMS, and goes away when the gem is resolved or rerolled.
+
 The bench cap (15) is handled by the game; the prototype ignores it.
 
 Reduced motion (`prefers-reduced-motion`) sets every timing token to 0.
@@ -111,7 +140,11 @@ Reduced motion (`prefers-reduced-motion`) sets every timing token to 0.
 These are not part of the panel:
 - **Live gem strips** over the screenshot's ability bar. They are positioned at Q/W/E/R using `HUD_SLOT_X` in the script, so they line up with this screenshot only.
 - **Bench contents** over the screenshot's open Gems Bench: the counter (over its "0/15") and the stored gems in its well (`BENCH` in the script, `--bench-gem`). Benched gems fly to the next spot there.
-- The dashed **Prototype controls** box at the top-left: Reset demo, and a log of the last action.
+- The dashed **Prototype controls** box at the top-left:
+  - **Supporter** checkbox (on by default)
+  - **Force an upgrade**: brings in a new common or rare gem with the bonus guaranteed
+  - **Reset demo**
+  - a log of the last action
 
 ## Materials & skins
 
@@ -119,7 +152,7 @@ These are not part of the panel:
 |---|---|---|
 | Main piece, brace tiers | `cross_texture_tile.png` | The tier gradient, multiplied by the line art, inside each piece's shape. The tile is `cross_texture.png` mirrored 2×2 so it repeats without seams, drawn at half size (the game art is authored at 2×). |
 | Rows, linked drawer | none | Translucent dark fill + inner shadow (`--well*` tokens) |
-| Send gem to bench | `button_active_v2.png` (blue) | 9-sliced: slice 6 → 3 px border; `hue-rotate(-40deg)` makes it teal |
+| Send gem to bench | `button_base.png` | 9-sliced: slice 6 → 3 px border; `brightness(.62)` for dark neutral stone |
 | Dice / reroll tab | `button_active.png` (gold) | 9-sliced, as above |
 | LATER / GEMS | `button_base.png` | 9-sliced, as above |
 
@@ -133,7 +166,7 @@ Not used: `bench_bg`, `bench_header`, `choice_bg` (they were per-piece skins, wh
 
 | File | Status |
 |---|---|
-| `t{1-3}_{type}.png`, `gem_slot.png` | Final art (64×64) |
+| `t{1-3}_{type}.png`, `gem_slot.png` | Final art (64×64). Epic icons use the slim, inset gold rim, so the gem sits clear of the rarity ring. |
 | `ether-shock.png`, `hex.png`, `shackles.png`, `mass-serpent-ward.png`, `fowl-play.png` | Final art |
 | `effect-mana.png`, `effect-heal.png`, `effect-hp.png`, `dice.png` | **Placeholders** cropped from `reference.webp`. Only mana-cost, healing and max-health lines have an icon so far. |
 | `cross_texture_tile.png` | Derived from `cross_texture.png` (see Materials) |
@@ -143,6 +176,8 @@ Not used: `bench_bg`, `bench_header`, `choice_bg` (they were per-piece skins, wh
 ## Assumptions / open questions
 
 - Reroll odds are uniform across type and tier. The real weighting is unknown.
+- The supporter bonus rolls only for **newly gained** gems. A rerolled gem never triggers it, and rerolling an upgraded gem replaces it with a normal roll.
+- The bonus is decided when the gem arrives; the reveal is presentation only. A gem slotted after the reveal is the upgraded one.
 - Row height varies with effect count (from 1 line up to 4), and the linked drawer appears and disappears, so the panel's height changes on reroll.
 - The demo starts with Hex full (3/3), Shackles at 2/3, Ether Shock at 1/3 and Mass Serpent Ward at 0/2.
 - When the Gems Bench is closed in game, the benched gem should fly to wherever the bench is reached from (its HUD button). The prototype only covers the open-bench case shown in the screenshot.

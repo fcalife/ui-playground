@@ -32,19 +32,42 @@
   --linked-indent: 30px;
   --linked-icon: 30px;
   --effect-icon: 18px;
-  --medal-size: 46px;
+  --socket-size: 58px;         /* the gem's rarity ring */
+  --medal-size: 44px;
   --hud-slot: 18px;
   --bench-gem: 42px;
 
   /* The panel body is one silhouette: tier gradient × cross_texture line art, with a single rim */
   --cross: url(assets/cross_texture_tile.png) 0 0 / 656px 389px repeat;   /* mirrored tile, drawn at half size (art is 2×) */
   /* common = slate, rare = blue, epic = purple (Dota/MMO rarity convention, same as the orb UI) */
-  --common-fill: #4a5059, #2e3238;  --common-rim: #737a83, #2c3035;  --common-title: #ece8df;
-  --rare-fill: #5f86e0, #24397e;    --rare-rim: #a9c4ff, #31489a;    --rare-title: #eef3ff;
-  --epic-fill: #a06ae6, #44207e;    --epic-rim: #dcbcff, #5a2f96;    --epic-title: #f8efff;
-  --sheen-shiny: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.18) 45%, transparent 52%, transparent 70%, rgba(255,255,255,.09) 78%, transparent 84%);
+  /* Panel color = gem TYPE (hues taken from the gem art); top → bottom gradient */
+  --type-power: #d0503f, #6d1c16;
+  --type-protection: #9aa1a9, #474d55;
+  --type-destruction: #d14a9a, #6a1650;
+  --type-mobility: #e0802e, #7a3a0c;
+  --type-vitality: #4caf50, #1d5a22;
+  --type-fortune: #e3b52c, #6f5207;
+  --type-time: #2fb5c9, #0e5765;
+  --type-utility: #4a78d8, #1f3477;
+  --type-space: #8a5ad8, #3c1f78;
+
+  /* Gem RARITY = light rays behind the panel plus a matching metallic ring around the gem
+     (common: neither, rare: silver, epic: gold). The ring is radial bands (light → dark = bevel), open center. */
+  --rare-ring: radial-gradient(closest-side, transparent 86%, #f4f7fa 88%, #aeb8c4 93%, #6f7a86 97%, transparent 100%);
+  --rare-ring-glow: 0 0 8px rgba(225,238,255,.5);
+  --epic-ring: radial-gradient(closest-side, transparent 86%, #fff1a6 88%, #f2c230 93%, #9c6a0a 97%, transparent 100%);
+  --epic-ring-glow: 0 0 9px rgba(255,196,50,.5);
+  --rare-ray-rgb: 228, 238, 252;     --rare-ray-glow-rgb: 205, 220, 240;
+  --epic-ray-rgb: 255, 214, 110;     --epic-ray-glow-rgb: 255, 190, 60;
+  --ray-count: 16;             /* read by script */
+  --rays-size: 900px;
+  --t-rays: 24s;               /* one full turn of the light rays */
+  --c-rarity-common: #e2e5e9;
+  --c-rarity-rare: #e4ecf6;
+  --c-rarity-epic: #ffd45a;
 
   /* Rows are depressions carved into the slab: translucent dark, so they carry a hint of the tier */
+  --well-shadow: inset 0 2px 6px rgba(0,0,0,.85), inset 0 0 0 1px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.14);
   --well: rgba(8,10,13,.62);
   --well-hover: rgba(30,34,40,.55);
   --well-linked: rgba(4,5,7,.72);
@@ -77,6 +100,8 @@
   --t-slide: 160ms;
   --t-slide-out: 120ms;
   --t-fly: 380ms;
+  --t-upgrade-hold: 250ms;     /* the original rarity stays on screen this long before the upgrade lands */
+  --t-flash: 360ms;
 }
 
 * { box-sizing: border-box; }
@@ -108,25 +133,57 @@ img { display: block; }
 
 /* ── Dock: the panel, flush with the right screen edge. Slides are driven by script. ── */
 .dock {
-  --fill: var(--common-fill); --rim-c: var(--common-rim); --title-c: var(--common-title); --sheen: none;
+  /* common: no real border, just a lighter edge of the panel's own color */
+  --rim-bg: linear-gradient(rgba(255,255,255,.28), rgba(0,0,0,.25)), linear-gradient(var(--fill));
+  --rarity-c: var(--c-rarity-common);
+  --main-shape: polygon(
+    var(--crest-slope) 0, calc(var(--crest-w) - var(--crest-slope)) 0, var(--crest-w) var(--header-h),
+    100% var(--header-h), 100% 100%,
+    var(--chamfer) 100%, 0 calc(100% - var(--chamfer)), 0 var(--header-h));
   position: absolute; right: 0; top: var(--dock-top);
   width: var(--panel-w);
   isolation: isolate;
-  filter: drop-shadow(-8px 4px 14px rgba(0,0,0,.7));
 }
-.dock[data-tier="2"] { --fill: var(--rare-fill); --rim-c: var(--rare-rim); --title-c: var(--rare-title); --sheen: var(--sheen-shiny); }
-.dock[data-tier="3"] { --fill: var(--epic-fill); --rim-c: var(--epic-rim); --title-c: var(--epic-title); --sheen: var(--sheen-shiny); }
+.dock[data-type="power"]       { --fill: var(--type-power); }
+.dock[data-type="protection"]  { --fill: var(--type-protection); }
+.dock[data-type="destruction"] { --fill: var(--type-destruction); }
+.dock[data-type="mobility"]    { --fill: var(--type-mobility); }
+.dock[data-type="vitality"]    { --fill: var(--type-vitality); }
+.dock[data-type="fortune"]     { --fill: var(--type-fortune); }
+.dock[data-type="time"]        { --fill: var(--type-time); }
+.dock[data-type="utility"]     { --fill: var(--type-utility); }
+.dock[data-type="space"]       { --fill: var(--type-space); }
+.dock[data-tier="2"] { --rarity-c: var(--c-rarity-rare); --ring: var(--rare-ring); --ring-glow: var(--rare-ring-glow); }
+.dock[data-tier="3"] { --rarity-c: var(--c-rarity-epic); --ring: var(--epic-ring); --ring-glow: var(--epic-ring-glow); }
+
+/* ── Rarity effect behind the panel (mock-up of the in-engine particles): light rays fanning out and turning
+      slowly, silver for rare and gold for epic. Each ray is a wedge whose gradient fades along its length
+      (no CSS mask: masks failed to render in the in-app browser). ── */
+.dock[data-tier="2"] { --ray-rgb: var(--rare-ray-rgb); --ray-glow-rgb: var(--rare-ray-glow-rgb); }
+.dock[data-tier="3"] { --ray-rgb: var(--epic-ray-rgb); --ray-glow-rgb: var(--epic-ray-glow-rgb); }
+.aura--rays {
+  position: absolute; z-index: -10; pointer-events: none; display: none;
+  left: 50%; top: 50%; width: var(--rays-size); height: var(--rays-size); translate: -50% -50%;
+  background: radial-gradient(closest-side, rgba(var(--ray-glow-rgb), .5), transparent);
+  mix-blend-mode: screen;                      /* light adds to the scene instead of painting over it */
+  animation: spin var(--t-rays) linear infinite;
+}
+.dock:is([data-tier="2"], [data-tier="3"]) .aura--rays { display: block; }
+.ray {
+  position: absolute; left: 50%; bottom: 50%;
+  width: var(--w); height: 50%; margin-left: calc(var(--w) / -2);
+  transform-origin: 50% 100%; rotate: var(--a);
+  background: linear-gradient(to top, rgba(var(--ray-rgb), 0), rgba(var(--ray-rgb), .8) 35%, rgba(var(--ray-rgb), 0));
+  clip-path: polygon(46% 100%, 54% 100%, 100% 0, 0 0);
+}
+@keyframes spin { to { rotate: 1turn; } }
 
 /* ── Pieces: the main slab (crest + body) and two brace tiers stacked behind it.
       Each piece tucks under the one above and receives its shadow, so they read as layers. ── */
 .layer { position: absolute; pointer-events: none; filter: var(--layer-shadow); }
-.layer--main {
-  inset: 0 0 calc(2 * var(--brace-tier)) 0; z-index: -1;
-  --shape: polygon(
-    var(--crest-slope) 0, calc(var(--crest-w) - var(--crest-slope)) 0, var(--crest-w) var(--header-h),
-    100% var(--header-h), 100% 100%,
-    var(--chamfer) 100%, 0 calc(100% - var(--chamfer)), 0 var(--header-h));
-}
+.layer--main, .flash { inset: 0 0 calc(2 * var(--brace-tier)) 0; }
+/* the main piece also casts the panel's shadow onto the game, to the left */
+.layer--main { z-index: -1; --shape: var(--main-shape); filter: var(--layer-shadow) drop-shadow(-8px 4px 14px rgba(0,0,0,.7)); }
 .layer--upper {
   right: 0; bottom: var(--brace-tier); z-index: -3;
   width: var(--brace-w); height: calc(var(--brace-tier) + var(--brace-overlap));
@@ -141,28 +198,40 @@ img { display: block; }
 }
 /* rim = the piece's outline; body = the same shape inset by --rim (not on the screen-edge side) */
 .shape, .shape::before { position: absolute; clip-path: var(--shape); }
-.shape { inset: 0; background: linear-gradient(var(--rim-c)); filter: var(--shade, none); }
+.shape { inset: 0; background: var(--rim-bg); filter: var(--shade, none); }
 .shape::before {
   content: ""; inset: var(--rim) 0 var(--rim) var(--rim);
-  background: var(--sheen), var(--cross), linear-gradient(var(--fill));
-  background-blend-mode: normal, multiply, normal;
+  background: var(--cross), linear-gradient(var(--fill));
+  background-blend-mode: multiply, normal;
 }
+/* white flash over the main piece when a supporter upgrade lands */
+.flash { position: absolute; z-index: 3; pointer-events: none; clip-path: var(--main-shape); background: #fff; opacity: 0; }
 
 /* click-through: the dice tab sits behind the crest layer, so the header box itself mustn't catch its clicks */
 .header { height: var(--header-h); display: grid; grid-template-columns: var(--crest-w) 1fr; pointer-events: none; }
 /* Crest: the gem and its name in one piece */
 .crest {
-  display: grid; grid-template-columns: var(--medal-size) 1fr; align-items: center; gap: 4px;
-  padding: 4px calc(var(--crest-slope) + 4px) 0 calc(var(--crest-slope) + 10px);
+  display: grid; grid-template-columns: var(--socket-size) 1fr; align-items: center; gap: 4px;
+  /* the visible header runs down to the first row, so center in that span (header + slab padding) */
+  padding: var(--slab-pad) calc(var(--crest-slope) + 4px) 0 calc(var(--crest-slope) + 4px);
+}
+/* rarity ring around the gem (rare/epic only); empty on common */
+.socket {
+  width: var(--socket-size); height: var(--socket-size);
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--ring, none);
+  box-shadow: var(--ring-glow, none);
 }
 .medal {
   width: var(--medal-size); height: var(--medal-size);
   border-radius: 50%;
-  filter: drop-shadow(0 0 8px rgba(247,207,60,.5));
+  /* a white rim light and a dark contact shadow lift the gem off any panel color */
+  filter: drop-shadow(0 0 3px rgba(255,255,255,.55)) drop-shadow(0 2px 3px rgba(0,0,0,.85));
 }
-.crest__title { text-align: center; color: var(--title-c); text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 6px rgba(0,0,0,.6); }
+.crest__title { text-align: center; color: #f6f3ec; text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 6px rgba(0,0,0,.6); }
 .crest__title h1 { margin: 0; font-size: var(--fs-title); white-space: nowrap; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; line-height: 1; }
-.crest__title p { margin: 3px 0 0; font-size: var(--fs-rarity); font-style: italic; }
+.crest__title p { margin: 3px 0 0; font-size: var(--fs-rarity); font-style: italic; font-weight: 600; color: var(--rarity-c); }
 /* gold dice tab: tucked behind the crest (which overlaps and shades its left end) and into the slab below */
 .currency {
   --skin: var(--skin-btn-gold);
@@ -185,7 +254,7 @@ img { display: block; }
 .well {
   background: var(--well);
   border-radius: 2px;
-  box-shadow: inset 0 2px 6px rgba(0,0,0,.85), inset 0 0 0 1px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.14);
+  box-shadow: var(--well-shadow);
   transition: background-color var(--t-hover);
 }
 .option:hover .option__main { background: var(--well-hover); }
@@ -236,9 +305,21 @@ img { display: block; }
 /* ── Buttons ── */
 .actions { display: flex; gap: 8px; margin-top: 2px; }
 .btn { padding: 10px 14px; font-size: var(--fs-button); font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
-/* blue skin turned teal: a hue none of the tiers (slate / blue / purple) use, so it stays distinct on every tier */
-.btn--bench { --skin: var(--skin-btn-blue); --tone: hue-rotate(-40deg) saturate(.9); --skin-filter: var(--tone); flex: 1; }
-.btn--bench:hover { --skin-filter: var(--tone) brightness(1.2); }
+/* the game's blue button skin, as-is (closest to the Utility gem's blue panel) */
+/* dark neutral stone, close to the Gems Bench's own color: no hue, so it never clashes with a gem type's panel */
+.btn--bench { --tone: brightness(.62); --skin-filter: var(--tone); flex: 1; }
+.btn--bench:hover { --skin-filter: var(--tone) brightness(1.3); }
+
+/* supporter upgrade notice, shown at the top of the slab while the upgraded gem is on offer */
+.bonus {
+  margin: 0; padding: 6px 10px;
+  text-align: center; font-size: 14px; font-weight: 700; letter-spacing: .02em;
+  color: var(--c-rarity-epic);
+  background: rgba(8,10,13,.7);
+  border: 1px solid rgba(255,212,90,.55); border-radius: 2px;
+  text-shadow: 0 1px 2px rgba(0,0,0,.9);
+}
+.bonus[hidden] { display: none; }
 
 /* LATER sits above the panel, flush right; it stays on screen when the panel rolls out and becomes "◀ GEMS" */
 .later {
@@ -252,7 +333,7 @@ img { display: block; }
 .later.is-deferred .arrow { rotate: 180deg; }
 
 /* ── States (data-state on .screen) ── */
-.screen:is([data-state="rerolling"], [data-state="leaving"], [data-state="deferred"]) .dock { pointer-events: none; }
+.screen:is([data-state="rerolling"], [data-state="leaving"], [data-state="deferred"], [data-state="upgrading"]) .dock { pointer-events: none; }
 .screen[data-state="picking"] .option:not(.is-picking) { opacity: .55; }
 .screen[data-state="picking"] .option:not(.is-picking):hover { opacity: 1; }
 .option.is-picking .option__main { background: var(--well-picking); box-shadow: inset 0 2px 6px rgba(0,0,0,.85), inset 0 0 0 1px var(--c-gold-hi); }
@@ -293,8 +374,9 @@ img { display: block; }
 .demo__log { flex-basis: 100%; margin: 0; min-height: 1.3em; }
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --t-hover: 0ms; --t-slide: 0ms; --t-slide-out: 0ms; --t-fly: 0ms; }
+  :root { --t-hover: 0ms; --t-slide: 0ms; --t-slide-out: 0ms; --t-fly: 0ms; --t-upgrade-hold: 0ms; --t-flash: 0ms; }
   :is(.hud-slots, .bench-gems) .is-new { animation: none; }
+  .aura--rays { animation: none; }
 }
 </style>
 </head>
@@ -304,13 +386,14 @@ img { display: block; }
   <button class="later skin" data-action="later"><span><span data-bind="laterLabel">Later</span> (<span data-bind="pending"></span>)</span><span class="arrow"></span></button>
 
   <section class="dock" data-tier="1" aria-labelledby="gem-name">
+    <div class="aura--rays" aria-hidden="true"></div>
     <div class="layer layer--lower" aria-hidden="true"><i class="shape"></i></div>
     <div class="layer layer--upper" aria-hidden="true"><i class="shape"></i></div>
     <div class="layer layer--main" aria-hidden="true"><i class="shape"></i></div>
 
     <header class="header">
       <div class="crest">
-        <img class="medal" src="assets/t1_fortune.png" alt="">
+        <div class="socket"><img class="medal" src="assets/t1_fortune.png" alt=""></div>
         <div class="crest__title">
           <h1 id="gem-name" data-bind="gemName"></h1>
           <p>(<span data-bind="rarity"></span>)</p>
@@ -322,6 +405,7 @@ img { display: block; }
     </header>
 
     <div class="slab">
+      <p class="bonus" hidden aria-live="polite">Supporter bonus activated! Gem upgraded.</p>
       <ul class="options"></ul>
       <div class="actions">
         <button class="btn btn--bench skin" data-action="bench">Send gem to bench</button>
@@ -329,6 +413,7 @@ img { display: block; }
     </div>
 
     <div class="brace-space"></div>
+    <div class="flash" aria-hidden="true"></div>
   </section>
 
   <div class="hud"></div>
@@ -337,6 +422,8 @@ img { display: block; }
 
   <aside class="demo">
     <span class="demo__label">Prototype controls</span>
+    <label><input type="checkbox" name="supporter" checked> Supporter</label>
+    <button data-action="forceUpgrade">Force an upgrade</button>
     <button data-action="replay">Reset demo</button>
     <p class="demo__log" data-bind="log" aria-live="polite"></p>
   </aside>
@@ -368,13 +455,14 @@ img { display: block; }
 const DATA = {
   dice: 99999,
   pending: 1,
+  supporterUpgradeChance: 0.25,   // supporters: chance a new common/rare gem arrives upgraded one tier
   benchMax: 15,
   gemTypes: ["destruction", "fortune", "mobility", "power", "protection", "space", "time", "utility", "vitality"],
   // index = tier - 1; gem icons are assets/t{tier}_{type}.png; the tier also tints the panel
   rarities: ["common", "rare", "epic"],
   startGem: { type: "fortune", tier: 1 },
   // maxSlots: grows 1 → 2 → 3 over a match in the real game; fixed here to show a 2-slot ultimate.
-  // slots: gems already slotted at demo start (Hex starts full to show the "Which slot?" flow)
+  // slots: gems already slotted at demo start (Hex starts full to show the "All slots full" flow)
   // gems: what each gem type does to this ability. One entry per effect line: a string, or { icon, text }.
   //   {a|b|c} = value at tier 1|2|3 (a single {a} applies to every tier); braces render highlighted.
   // linked: an extra ability that inherits this one's gems; its drawer only shows for gem types it lists.
@@ -519,9 +607,9 @@ function renderRow(ability, i) {
   const name = li.querySelector(".option__name");
   const effects = li.querySelector(".option__text .effects");
   if (picking) {
-    kicker.textContent = `${ability.name} is full`;
-    name.textContent = "Which slot?";
-    effects.innerHTML = `<li class="note">Click a gem to swap it out. The old one goes to the bench.</li>`;
+    kicker.hidden = true;
+    name.textContent = "All slots full";
+    effects.innerHTML = `<li class="note">Click a gem to bench it and slot this one in its place.</li>`;
   } else {
     kicker.textContent = "Slot gem into";
     name.textContent = ability.name;
@@ -571,6 +659,8 @@ function render() {
   bind("laterLabel", deferred ? "Gems" : "Later");
   screen.querySelector(".later").classList.toggle("is-deferred", deferred);
   dock.dataset.tier = state.gem.tier;
+  dock.dataset.type = state.gem.type;
+  screen.querySelector(".bonus").hidden = !state.bonus;
   screen.querySelector(".medal").src = gemIcon(state.gem);
   screen.querySelector("[data-action=reroll]").disabled = state.dice <= 0;
   list.replaceChildren(...state.abilities.map(renderRow));
@@ -621,9 +711,28 @@ async function closePanel(log, lastSlot = null) {
   state.lastSlot = lastSlot;
   renderHud();
   await slideOut("leaving");
-  state.gem = randomGem();
-  setState("choosing");
+  arrive(randomGem());
+}
+
+// A new gem slides in. For supporters, a common or rare gem may arrive upgraded: the panel shows the
+// original rarity, then flashes and switches to the next tier with the bonus notice. Epics can't upgrade.
+async function arrive(gem, forceUpgrade = false) {
+  state.gem = gem;
+  state.bonus = false;
+  const upgradable = gem.tier < state.rarities.length;
+  const upgrade = upgradable && (forceUpgrade || (state.supporter && Math.random() < state.supporterUpgradeChance));
+  setState(upgrade ? "upgrading" : "choosing");
   slideIn();
+  if (!upgrade) return;
+  await wait(ms("--t-slide") + ms("--t-upgrade-hold"));
+  screen.querySelector(".flash").animate([{ opacity: 0 }, { opacity: .85, offset: .3 }, { opacity: 0 }], { duration: ms("--t-flash") });
+  await wait(ms("--t-flash") * .3);           // swap at the flash's peak, while the panel is washed out
+  const from = state.rarities[gem.tier - 1];
+  state.gem = { ...gem, tier: gem.tier + 1 };
+  state.bonus = true;
+  state.log = `${state.log} Supporter bonus: ${gemName(gem)} ${from} → ${state.rarities[gem.tier]}.`.trim();
+  setState("choosing");
+  screen.querySelector(".medal").animate([{ scale: 1.6 }, { scale: 1 }], { duration: 320, easing: "cubic-bezier(.2,.8,.2,1)" });
 }
 
 const actions = {
@@ -663,8 +772,16 @@ const actions = {
     let next;
     do next = randomGem(); while (next.type === state.gem.type && next.tier === state.gem.tier);
     state.gem = next;
+    state.bonus = false;                      // a reroll is not a newly gained gem, so no supporter roll
     setState("choosing");
     slideIn();
+  },
+  // Prototype control: bring in a new common/rare gem with the supporter upgrade guaranteed
+  async forceUpgrade() {
+    if (screen.dataset.state !== "deferred") await slideOut("leaving");
+    let gem;
+    do gem = randomGem(); while (gem.tier >= state.rarities.length);
+    arrive(gem, true);
   },
   // LATER rolls the panel out and turns into "◀ GEMS"; clicking that brings the same gem back
   later() {
@@ -681,7 +798,8 @@ const actions = {
 
 function reset() {
   state = structuredClone(DATA);
-  Object.assign(state, { gem: state.startGem, bench: [], picking: null, lastSlot: null, log: "" });
+  Object.assign(state, { gem: state.startGem, bench: [], picking: null, lastSlot: null, log: "", bonus: false,
+                         supporter: screen.querySelector("[name=supporter]").checked });
   setState("choosing");
   renderHud();
   renderBench();
@@ -692,16 +810,22 @@ document.addEventListener("click", e => {
   const el = e.target.closest("[data-action]");
   if (!el || el.disabled) return;
   const s = screen.dataset.state, a = el.dataset.action;
-  const busy = (s === "leaving" || s === "rerolling") && a !== "replay";
-  const away = s === "deferred" && a !== "later" && a !== "replay";
+  const busy = ["leaving", "rerolling", "upgrading"].includes(s) && a !== "replay";
+  const away = s === "deferred" && !["later", "replay", "forceUpgrade"].includes(a);
   if (!busy && !away) actions[a](el);
 });
+screen.querySelector("[name=supporter]").addEventListener("change", e => state.supporter = e.target.checked);
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && state.picking !== null) {
     state.picking = null;
     setState("choosing");
   }
 });
+
+// Rare/epic light rays: evenly spaced wedges with slightly varied widths
+const rayCount = ms("--ray-count");
+screen.querySelector(".aura--rays").innerHTML = Array.from({ length: rayCount }, (_, i) =>
+  `<i class="ray" style="--a:${(360 / rayCount) * i + Math.random() * 8}deg;--w:${50 + Math.random() * 60}px"></i>`).join("");
 
 const fit = () => document.documentElement.style.setProperty("--fit", Math.min(innerWidth / 1920, innerHeight / 1080));
 addEventListener("resize", fit);

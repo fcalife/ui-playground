@@ -21,7 +21,7 @@ Folder names are path- and URL-safe (e.g. `dotapp` for "dota++").
 
 ## Publishing (GitHub Pages)
 
-The repo root is the site. `index.html` is a hand-kept list: one `<section>` per project and one `<li>` per mockup, linking to `<game>/<screen>/` and its `SPEC.html`. GitHub Pages' default Jekyll build renders each `SPEC.md` as `SPEC.html`. When adding a mockup, add its entry to `index.html`. Keep every path relative (the site lives under `/ui-playground/`), and list large unused files under `exclude` in `_config.yml` so they stay unpublished.
+The repo root is the site. `index.html` is a hand-kept list: one `<section>` per project and one `<li>` per mockup, linking to `<game>/<screen>/` and its spec. The spec link is `SPEC.html` (GitHub Pages' default Jekyll build renders each `SPEC.md` as `SPEC.html`), unless Felipe keeps that mockup's spec in a Google Doc. Gem Slot links to its Doc. When adding a mockup, add its entry to `index.html`. Keep every path relative (the site lives under `/ui-playground/`), and list large unused files under `exclude` in `_config.yml` so they stay unpublished.
 
 ## Conventions
 
