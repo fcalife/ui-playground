@@ -1,0 +1,35 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "dotapp/gem-slot/index.html"
+        ],
+        "createdAt": "2026-10-27T04:51:48.230Z",
+        "reason": "Claude: gold glow on gem medallion is in the reference concept art; game UI"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "dotapp/gem-slot/index.html"
+        ],
+        "createdAt": "2026-10-27T04:51:55.613Z",
+        "reason": "Claude: <template> imgs get src from JS at render time"
+      },
+      {
+        "rule": "buried-raster",
+        "value": "*",
+        "files": [
+          "dotapp/gem-slot/index.html"
+        ],
+        "createdAt": "2026-10-27T04:55:26.950Z",
+        "reason": "Claude: .option__badge is opacity 0 by design until the slotted state animates it in"
+      }
+    ]
+  }
+}

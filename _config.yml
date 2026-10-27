@@ -1,0 +1,15 @@
+# GitHub Pages (Jekyll) settings.
+# Jekyll renders each mockup's SPEC.md as SPEC.html and skips dot-folders (.claude, .impeccable) on its own.
+title: UI Playground
+theme: jekyll-theme-primer
+
+# Kept in the repo, but not published
+exclude:
+  - CLAUDE.md
+  # unused ChatGPT texture renders (~19 MB)
+  - dotapp/gem-slot/assets/stone_texture_01.png
+  - dotapp/gem-slot/assets/stone_texture_02.png
+  - dotapp/gem-slot/assets/stone_texture_03.png
+  - dotapp/gem-slot/assets/metal_texture_01.png
+  - dotapp/gem-slot/assets/metal_texture_02.png
+  - dotapp/gem-slot/assets/metal_texture_03.png
