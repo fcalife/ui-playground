@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dota++ · Tutorial Popup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700;800&display=swap">
+<style>
+/* ── Tokens: every size, color and timing lives here (this block is the measurements spec).
+      Sizes are 1080p pixels: the whole screen is a 1920×1080 stage scaled to fit the window. ── */
+:root {
+  --font-ui: "Barlow", system-ui, sans-serif;
+  --c-text: #ffffff;
+  --c-text-dim: #a9adb3;
+  --c-focus: #f5c22b;
+  --c-dim: rgba(0,0,0,.6);              /* modal backdrop over the game */
+  --c-step: #f5c22b;                    /* step number rings: the one accent, so the 1→2→3 order reads at a glance */
+  --c-result: #6fd14b;                  /* "DMG UP!": Dota's buff green */
+
+  /* panel */
+  --panel-w: 1168px;
+  --panel-bg: url(assets/bg.webp) center / cover;
+  --panel-border: 1px solid rgba(255,255,255,.12);
+  --panel-shadow: 0 20px 60px rgba(0,0,0,.8);
+  --panel-pad-x: 56px;
+  --panel-pad-bottom: 52px;
+  --col-gap: 96px;                      /* between the "Do stuff" column and the right column; the divider sits in the middle */
+  --divider: linear-gradient(transparent, rgba(255,255,255,.14) 15%, rgba(255,255,255,.14) 85%, transparent);
+  --head-gap: 20px;                     /* step heading → its content */
+  --step-gap: 44px;                     /* step 2 → step 3 */
+
+  /* title row */
+  --fs-title: 64px;
+  --logo-w: 230px;
+  --title-top: 28px;
+  --title-gap: 40px;                    /* title → step headings; separates the header without a rule */
+
+  /* step headings: numbered circle + label */
+  --fs-step: 38px;
+  --step-num: 46px;
+  --step-ring: 2.5px;
+  --fs-info: 22px;
+  --info-size: 32px;
+
+  /* equations */
+  --icon: 64px;                         /* player, verb, small targets */
+  --icon-big: 88px;                     /* tower and Roshan portraits */
+  --shard: 56px;
+  --gem: 64px;
+  --exchange-shard: 64px;               /* step 2 is the hinge of the loop, so its icons are a size up */
+  --exchange-gem: 80px;
+  --fs-op: 36px;                        /* "=" and "+" */
+  --fs-amount: 34px;                    /* the amounts are what varies in step 1, so they carry weight */
+  --row-gap: 28px;
+  --eq-gap: 18px;
+  --target-plate: radial-gradient(closest-side, rgba(255,255,255,.1), transparent);  /* lifts dark portraits off the background */
+
+  /* ability card (step 3) */
+  --card-w: 82px;
+  --card-bg: linear-gradient(#55665a, #33403a);
+  --card-border: 2px solid rgba(255,255,255,.22);
+  --card-before-opacity: .5;            /* the "before" card steps back so the slotted card is the focus */
+  --card-icon: 68px;
+  --card-slot: 30px;                    /* one slot, centered above the icon, only on the "after" card */
+  --slot-ring: 0 0 0 2px #f5c22b;
+  --fs-hotkey: 16px;
+  --fs-level: 17px;
+  --c-level: #9fc4ff;
+  --pip-w: 12px;
+  --pip-h: 5px;
+  --c-pip: #3a4048;
+  --c-pip-on: #d8c060;
+
+  /* "DMG UP!" + rank chevrons */
+  --fs-result: 24px;
+  --chevron-w: 42px;
+  --chevron-overlap: -12px;             /* stacked chevrons overlap vertically */
+  /* chevrons tinted by tier, matching the gem rims */
+  --tier-1: #ffffff;
+  --tier-2: #c9d3dc;
+  --tier-3: #f0c24a;
+  --upgrade-row: 124px;
+
+  --t-close: 160ms;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+body { font-family: var(--font-ui); color: var(--c-text); }
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; }
+button:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+img { display: block; }
+
+/* 1920×1080 stage over an in-game screenshot, scaled to fit the window (--fit is set by script) */
+.screen {
+  position: absolute; left: 50%; top: 50%;
+  width: 1920px; height: 1080px;
+  transform: translate(-50%, -50%) scale(var(--fit, .5));
+  background: url(context-ingame.webp) center / cover;
+  overflow: hidden;
+}
+
+/* ── Modal ── */
+.backdrop {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: var(--c-dim);
+  transition: opacity var(--t-close);
+}
+.screen[data-state="closed"] .backdrop { opacity: 0; pointer-events: none; }
+
+.panel {
+  position: relative;
+  width: var(--panel-w);
+  padding: var(--title-top) var(--panel-pad-x) var(--panel-pad-bottom);
+  background: var(--panel-bg);
+  border: var(--panel-border);
+  box-shadow: var(--panel-shadow);
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; column-gap: var(--col-gap);
+}
+/* faint vertical divider between the columns */
+.panel::after {
+  content: ""; grid-row: 2; grid-column: 1 / -1; justify-self: center;
+  width: 1px; background: var(--divider); pointer-events: none;
+}
+.close {
+  position: absolute; top: 14px; right: 16px;
+  width: 40px; height: 40px; font-size: 34px; line-height: 1; color: var(--c-text-dim);
+}
+.close:hover { color: var(--c-text); }
+
+.title {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  margin: 0 0 var(--title-gap); font-size: var(--fs-title); font-weight: 500;
+}
+.title img { width: var(--logo-w); }
+
+/* ── Steps ── */
+.step h2 {
+  display: flex; align-items: center; gap: 22px;
+  margin: 0; font-size: var(--fs-step); font-weight: 500;
+}
+.step__num {
+  width: var(--step-num); height: var(--step-num); flex: none;
+  display: grid; place-items: center;
+  border: var(--step-ring) solid currentColor; border-radius: 50%;
+  font-size: calc(var(--fs-step) * .9); font-weight: 700; color: var(--c-step);
+}
+.step h2 { margin-bottom: var(--head-gap); }
+.step--do h2 { justify-content: center; }
+/* left column: rows at a fixed gap, centered vertically against the right column */
+.step--do { grid-area: 2 / 1; display: flex; flex-direction: column; }
+.step--do .rewards { flex: 1; align-content: center; }
+.right { grid-area: 2 / 2; display: grid; align-content: start; gap: var(--step-gap); }
+.right .step h2 { justify-content: center; }
+
+/* "i" next to "Do stuff": tooltip with the full list of ways to earn gem points */
+.info { position: relative; margin-right: calc(-1 * (var(--info-size) + 22px)); }  /* out of the centering, so "Do stuff" is centered on its own */
+.info__btn {
+  width: var(--info-size); height: var(--info-size); display: grid; place-items: center;
+  border: 2px solid currentColor; border-radius: 50%;
+  font-size: var(--fs-info); font-style: italic; font-weight: 700;
+}
+.info__tip {
+  position: absolute; left: 50%; top: calc(100% + 10px); translate: -50% 0; z-index: 1;
+  width: max-content; margin: 0; padding: 10px 14px; list-style: none;
+  background: rgba(10,12,15,.95); border: 1px solid rgba(255,255,255,.2); border-radius: 4px;
+  font-size: 18px; font-weight: 500; line-height: 1.5;
+  opacity: 0; pointer-events: none; transition: opacity 120ms;
+}
+.info:is(:hover, :focus-within) .info__tip { opacity: 1; }
+
+/* ── Equations ── */
+.eq { display: flex; align-items: center; gap: var(--eq-gap); }
+.eq__op { font-size: var(--fs-op); font-weight: 500; }
+.eq__amount { font-size: var(--fs-amount); font-weight: 700; }
+.icon { width: var(--icon); height: var(--icon); object-fit: contain; }
+.icon--big { width: var(--icon-big); height: var(--icon-big); }
+.target { background: var(--target-plate); }
+.shard { width: var(--shard); height: var(--shard); }
+.gem { width: var(--gem); height: var(--gem); }
+
+/* step 1: player · verb · target = shard xN, columns aligned across rows */
+/* one grid for all rows (rows are subgrids), so every column lines up even though the amounts differ in width */
+.rewards {
+  display: grid; grid-template-columns: var(--icon) var(--icon) var(--icon-big) auto var(--shard) auto;
+  justify-content: center; row-gap: var(--row-gap); column-gap: var(--eq-gap);
+  margin: 0; padding: 0; list-style: none;
+}
+.rewards .eq { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; justify-items: center; }
+.rewards .eq__amount { justify-self: start; }
+
+.exchange { justify-content: center; }
+.exchange .shard { width: var(--exchange-shard); height: var(--exchange-shard); }
+.exchange .gem { width: var(--exchange-gem); height: var(--exchange-gem); }
+
+/* step 3: card + gem = card with the gem slotted → DMG UP! with 1–3 chevrons */
+.upgrades { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.upgrades .eq { height: var(--upgrade-row); justify-content: center; }
+.result { display: flex; align-items: center; gap: 14px; width: 190px; font-size: var(--fs-result); font-weight: 800; color: var(--c-result); }
+.chevrons { display: grid; }
+.chevrons i {
+  width: var(--chevron-w); aspect-ratio: 64 / 39;
+  background: var(--tier-c); -webkit-mask: url(assets/chevron.png) center / contain no-repeat; mask: url(assets/chevron.png) center / contain no-repeat;
+}
+.chevrons i + i { margin-top: var(--chevron-overlap); }
+.upgrades [data-tier="1"] { --tier-c: var(--tier-1); }
+.upgrades [data-tier="2"] { --tier-c: var(--tier-2); }
+.upgrades [data-tier="3"] { --tier-c: var(--tier-3); }
+
+.card {
+  width: var(--card-w); padding: 4px 5px 5px;
+  background: var(--card-bg); border: var(--card-border);
+  display: grid; justify-items: center; gap: 4px;
+}
+.card--before { opacity: var(--card-before-opacity); }
+.card__slot { width: var(--card-slot); height: var(--card-slot); border-radius: 50%; }
+.card--after .card__slot { box-shadow: var(--slot-ring); }
+.card--before .card__slot { visibility: hidden; }  /* keeps both cards the same height, icons aligned */
+.card__icon { position: relative; }
+.card__icon img { width: var(--card-icon); height: var(--card-icon); border: 1px solid #000; }
+.card__hotkey, .card__level {
+  position: absolute; font-weight: 800; line-height: 1;
+  text-shadow: 0 0 3px #000, 0 1px 2px #000;
+}
+.card__hotkey { top: 3px; left: 4px; font-size: var(--fs-hotkey); }
+.card__level { bottom: 3px; right: 4px; font-size: var(--fs-level); color: var(--c-level); }
+.card__pips { display: flex; gap: 4px; }
+.card__pips span { width: var(--pip-w); height: var(--pip-h); background: var(--c-pip); }
+.card__pips span:first-child { background: var(--c-pip-on); }
+
+/* prototype-only controls */
+.demo {
+  position: absolute; left: 24px; top: 150px; z-index: 1;
+  display: flex; gap: 10px; align-items: center;
+  padding: 10px 14px; border: 1px dashed rgba(255,255,255,.45); border-radius: 6px; background: rgba(0,0,0,.65);
+  font-size: 14px;
+}
+.demo span { text-transform: uppercase; letter-spacing: .08em; font-size: 12px; color: var(--c-text-dim); }
+.demo button { padding: 6px 12px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.35); border-radius: 4px; }
+.demo a { color: var(--c-focus); }
+
+@media (prefers-reduced-motion: reduce) { :root { --t-close: 0ms; } }
+</style>
+</head>
+<body>
+<div class="screen" data-state="open">
+  <aside class="demo">
+    <span>Prototype controls</span>
+    <button data-action="open">Show popup</button>
+    <a href="assets.html" target="_blank" rel="noopener">Asset list</a>
+  </aside>
+
+  <div class="backdrop">
+    <section class="panel" role="dialog" aria-modal="true" aria-labelledby="tut-title">
+      <button class="close" data-action="close" aria-label="Close">×</button>
+      <h1 class="title" id="tut-title"><span>Welcome to</span><img src="assets/logo.png" alt="dota++"><span>!</span></h1>
+
+      <div class="step step--do">
+        <h2><span class="step__num">1</span><span data-bind="step1"></span>
+          <span class="info">
+            <button class="info__btn" aria-label="What do these mean?" aria-describedby="tut-tip">i</button>
+            <ul class="info__tip" id="tut-tip" role="tooltip" data-bind="tip"></ul>
+          </span>
+        </h2>
+        <ul class="rewards" data-bind="rewards"></ul>
+      </div>
+
+      <div class="right">
+        <div class="step">
+          <h2><span class="step__num">2</span><span data-bind="step2"></span></h2>
+          <div class="eq exchange" data-bind="exchange"></div>
+        </div>
+        <div class="step">
+          <h2><span class="step__num">3</span><span data-bind="step3"></span></h2>
+          <ul class="upgrades" data-bind="upgrades"></ul>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+// ── Content: edit here, markup is rendered from it ──
+const ICONS = {
+  player: "assets/icon_player.png",
+  kill:   "assets/icon_kill.png",
+  pickup: "assets/icon_pickup.png",
+  shard:  "assets/shard.png",
+  gemUnknown: "assets/gem_unknown.png",
+};
+const DATA = {
+  copy: { step1: "Do stuff", step2: "Get Gems", step3: "Power UP!!!", result: "DMG UP!" },
+  // "i" tooltip: the full list of how gem points are earned (the rows below show only the main ones).
+  // PLACEHOLDER: replace with Felipe's final copy, one string per line.
+  info: [
+    "Kill a creep: 2 gem points",
+    "Destroy a tower: 100 gem points",
+    "Kill Roshan: 200 gem points",
+    "Kill a hero: 50 gem points",
+    "Pick up a bounty rune: 10 gem points",
+    "(placeholder) …other sources",
+  ],
+  // step 1: what you do → gem points earned. big: portrait art that needs the larger cell
+  rewards: [
+    { verb: "kill",   target: "assets/target_creep.png",       label: "Kill a creep",           shards: 2 },
+    { verb: "kill",   target: "assets/target_tower.png",       label: "Destroy a tower",        shards: 100, big: true },
+    { verb: "kill",   target: "assets/target_roshan.png",      label: "Kill Roshan",            shards: 200, big: true },
+    { verb: "kill",   target: "assets/target_hero.png",        label: "Kill a hero",            shards: 50 },
+    { verb: "pickup", target: "assets/target_bounty_rune.png", label: "Pick up a bounty rune",  shards: 10 },
+  ],
+  // step 2: gem points per random gem
+  gemCost: 75,
+  // step 3: the same gem type at each tier; chevrons = tier
+  card: { icon: "assets/ability_q.png", hotkey: "Q", level: 120, pips: 4 },
+  upgrades: [
+    { gem: "assets/gem_power_t1.png", tier: 1 },
+    { gem: "assets/gem_power_t2.png", tier: 2 },
+    { gem: "assets/gem_power_t3.png", tier: 3 },
+  ],
+};
+
+const $ = (sel) => document.querySelector(sel);
+const screen = $(".screen");
+const bind = (key) => screen.querySelector(`[data-bind="${key}"]`);
+
+// before: no slot; after: one slot above the icon holding the gem
+const card = (slotted) => `
+  <div class="card card--${slotted ? "after" : "before"}">
+    ${slotted ? `<img class="card__slot" src="${slotted}" alt="">` : `<span class="card__slot"></span>`}
+    <div class="card__icon"><img src="${DATA.card.icon}" alt="">
+      <span class="card__hotkey">${DATA.card.hotkey}</span><span class="card__level">${DATA.card.level}</span></div>
+    <div class="card__pips">${"<span></span>".repeat(DATA.card.pips)}</div>
+  </div>`;
+
+function render() {
+  for (const k of ["step1", "step2", "step3"]) bind(k).textContent = DATA.copy[k];
+
+  bind("rewards").innerHTML = DATA.rewards.map((r) => `
+    <li class="eq" aria-label="${r.label}: ${r.shards} gem points">
+      <img class="icon" src="${ICONS.player}" alt="">
+      <img class="icon" src="${ICONS[r.verb]}" alt="">
+      <img class="icon target${r.big ? " icon--big" : ""}" src="${r.target}" alt="">
+      <span class="eq__op">=</span>
+      <img class="shard" src="${ICONS.shard}" alt="">
+      <span class="eq__amount">x${r.shards}</span>
+    </li>`).join("");
+
+  bind("tip").innerHTML = DATA.info.map((line) => `<li>${line}</li>`).join("");
+
+  bind("exchange").innerHTML = `
+    <img class="shard" src="${ICONS.shard}" alt="">
+    <span class="eq__amount">x${DATA.gemCost}</span>
+    <span class="eq__op">=</span>
+    <img class="gem" src="${ICONS.gemUnknown}" alt="a random gem">`;
+
+  bind("upgrades").innerHTML = DATA.upgrades.map((u) => `
+    <li class="eq" data-tier="${u.tier}" aria-label="Slot a tier ${u.tier} gem: ${DATA.copy.result}">
+      ${card()}
+      <span class="eq__op">+</span>
+      <img class="gem" src="${u.gem}" alt="">
+      <span class="eq__op">=</span>
+      ${card(u.gem)}
+      <span class="result">${DATA.copy.result}
+        <span class="chevrons">${"<i></i>".repeat(u.tier)}</span></span>
+    </li>`).join("");
+}
+
+// Static popup: the only states are open (match start) and closed
+const setState = (s) => { screen.dataset.state = s; if (s === "open") $(".close").focus(); };
+screen.addEventListener("click", (e) => {
+  const a = e.target.closest("[data-action]")?.dataset.action;
+  if (a === "close") setState("closed");
+  if (a === "open") setState("open");
+});
+addEventListener("keydown", (e) => { if (e.key === "Escape" && screen.dataset.state === "open") setState("closed"); });
+
+const fit = () => document.documentElement.style.setProperty("--fit", Math.min(innerWidth / 1920, innerHeight / 1080));
+addEventListener("resize", fit);
+fit();
+render();
+</script>
+</body>
+</html>

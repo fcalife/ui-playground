@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tutorial Popup · Assets</title>
+<style>
+:root { --bg: #15171a; --card: #1f2226; --line: #33383e; --text: #ece8df; --text-dim: #a9adb3; --accent: #f5c22b; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, sans-serif; }
+main { max-width: 900px; margin: 0 auto; padding: 40px 16px; }
+h1 { margin: 0 0 4px; font-size: 26px; }
+.intro { margin: 0 0 28px; color: var(--text-dim); }
+h2 { margin: 28px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent); }
+table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); }
+td { padding: 8px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+td:first-child { width: 30%; }
+.size { width: 22%; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+img { width: 28px; height: 28px; object-fit: contain; vertical-align: middle; margin-right: 8px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.dim { color: var(--text-dim); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Tutorial Popup: assets</h1>
+  <p class="intro">Every file the prototype uses. The ability card, number circles and backdrop are CSS, not art. Sizes are display sizes in px on the 1920×1080 stage, not the source files' resolution. <a href="./">Back to prototype</a></p>
+
+  <h2>Panel</h2>
+  <table>
+    <tr><td><img src="assets/bg.webp" alt=""><a href="assets/bg.webp">bg.webp</a></td><td>Panel background, covers the whole panel.</td><td class="size">1168×840</td></tr>
+    <tr><td><img src="assets/logo.png" alt=""><a href="assets/logo.png">logo.png</a></td><td>dota++ logo in the title row.</td><td class="size">230×133</td></tr>
+  </table>
+
+  <h2>Step 1: Do stuff</h2>
+  <table>
+    <tr><td><img src="assets/icon_player.png" alt=""><a href="assets/icon_player.png">icon_player.png</a></td><td>The player, first icon of every reward row.</td><td class="size">64×64</td></tr>
+    <tr><td><img src="assets/icon_kill.png" alt=""><a href="assets/icon_kill.png">icon_kill.png</a></td><td>"Kill" verb (crossed swords).</td><td class="size">64×64</td></tr>
+    <tr><td><img src="assets/icon_pickup.png" alt=""><a href="assets/icon_pickup.png">icon_pickup.png</a></td><td>"Pick up" verb (hand).</td><td class="size">64×46 (in a 64×64 cell)</td></tr>
+    <tr><td><img src="assets/target_creep.png" alt=""><a href="assets/target_creep.png">target_creep.png</a></td><td>Target: lane creep.</td><td class="size">64×64</td></tr>
+    <tr><td><img src="assets/target_tower.png" alt=""><a href="assets/target_tower.png">target_tower.png</a></td><td>Target: tower.</td><td class="size">88×88</td></tr>
+    <tr><td><img src="assets/target_roshan.png" alt=""><a href="assets/target_roshan.png">target_roshan.png</a></td><td>Target: Roshan.</td><td class="size">88×88</td></tr>
+    <tr><td><img src="assets/target_hero.png" alt=""><a href="assets/target_hero.png">target_hero.png</a></td><td>Target: hero.</td><td class="size">64×64</td></tr>
+    <tr><td><img src="assets/target_bounty_rune.png" alt=""><a href="assets/target_bounty_rune.png">target_bounty_rune.png</a></td><td>Target: bounty rune.</td><td class="size">64×64</td></tr>
+    <tr><td><img src="assets/shard.png" alt=""><a href="assets/shard.png">shard.png</a></td><td>Gem point currency, on every reward row and in step 2.</td><td class="size">56×56</td></tr>
+  </table>
+
+  <h2>Steps 2 and 3: Get Gems, Power UP</h2>
+  <table>
+    <tr><td><img src="assets/gem_unknown.png" alt=""><a href="assets/gem_unknown.png">gem_unknown.png</a></td><td>Random gem you get for 75 gem points.</td><td class="size">64×64</td></tr>
+    <tr><td><img src="assets/gem_power_t1.png" alt=""><a href="assets/gem_power_t1.png">gem_power_t1.png</a></td><td>Common gem being slotted (row 1).</td><td class="size">64×64 · 30×30 in the card slot</td></tr>
+    <tr><td><img src="assets/gem_power_t2.png" alt=""><a href="assets/gem_power_t2.png">gem_power_t2.png</a></td><td>Rare gem being slotted (row 2).</td><td class="size">64×64 · 30×30 in the card slot</td></tr>
+    <tr><td><img src="assets/gem_power_t3.png" alt=""><a href="assets/gem_power_t3.png">gem_power_t3.png</a></td><td>Epic gem being slotted (row 3).</td><td class="size">64×64 · 30×30 in the card slot</td></tr>
+    <tr><td><img src="assets/ability_q.png" alt=""><a href="assets/ability_q.png">ability_q.png</a></td><td>Ability icon inside the CSS ability card.</td><td class="size">68×68</td></tr>
+    <tr><td><img src="assets/chevron.png" alt=""><a href="assets/chevron.png">chevron.png</a></td><td>Rank chevron next to "DMG UP!", stacked 1–3 times (= tier). Used as a mask, tinted white / silver / gold by tier.</td><td class="size">42×26</td></tr>
+  </table>
+
+  <h2>Prototype only</h2>
+  <table>
+    <tr><td><a href="context-ingame.webp">context-ingame.webp</a></td><td>In-game screenshot behind the modal. Not part of the UI.</td><td class="size">1920×1080 stage</td></tr>
+    <tr><td><a href="reference.webp">reference.webp</a></td><td>Felipe's original sketch, kept for comparison. Not used by the page.</td><td class="size">—</td></tr>
+  </table>
+</main>
+</body>
+</html>
