@@ -29,13 +29,14 @@
   --fs-level: 22px;
   --level-w: 92px;
 
-  /* center plate: semitransparent like the panels, in the trapezoid shape of the vanilla clock plate, with the gem shard */
-  --center-w: 114px;
+  /* center plate: semitransparent like the panels, in the trapezoid shape of the vanilla clock plate, holding the gem shard */
+  --center-w: 76px;                     /* fits the "GEM LEVEL" label (61px) with a little margin */
   --center-h: 48px;
-  --center-taper: 12%;                  /* how far each bottom corner is pulled in */
+  --center-taper: 16%;                  /* how far each bottom corner is pulled in */
+  --fs-center-label: 11px;              /* "GEM LEVEL": about the size of the game clock's digits */
+  --c-center-label: rgba(255,255,255,.85);
+  --center-gap: 4px;                    /* label → shard */
   --center-shard: 30px;
-  --fs-vs: 16px;
-  --c-vs: #f5c22b;
 
   /* team logos sit on the panels' inner ends and cover them (including the slanted top corner) */
   --logo: 56px;
@@ -62,7 +63,7 @@
   --thin-logo: 24px;                    /* team logos stay, shrunk; they overhang the strips' inner ends like the full ones */
   --thin-logo-offset: 4px;
   --thin-logo-ring: 0 0 0 1.5px #111, 0 1px 3px rgba(0,0,0,.8);
-  --thin-shard: 22px;                   /* the gem shard stays in the middle; the VS and the plate go */
+  --thin-shard: 22px;                   /* the gem shard stays in the middle; the plate goes */
 
   /* timings */
   --t-move: 220ms;                      /* full ↔ compact: moving down / back up */
@@ -171,11 +172,14 @@ img { display: block; }
   position: relative; justify-self: center; width: var(--center-w); height: var(--center-h);
   background: linear-gradient(rgba(255,255,255,.14) 1px, transparent 1px), var(--topbar-glass);   /* top highlight, like the panels' edge */
   clip-path: polygon(0 0, 100% 0, calc(100% - var(--center-taper)) 100%, var(--center-taper) 100%);
-  display: grid; justify-items: center; align-content: center;
+  display: grid; justify-items: center; align-content: center; row-gap: var(--center-gap);
   transition: opacity var(--t-morph);
 }
-.center span { font-size: var(--fs-vs); font-weight: 800; font-style: italic; line-height: 1; color: var(--c-vs); text-shadow: 0 2px 2px #000; }
-.center img { width: var(--center-shard); height: var(--center-shard); margin-top: -4px; object-fit: contain; transition: width var(--t-morph), height var(--t-morph); }
+.center__label {
+  font-size: var(--fs-center-label); font-weight: 700; line-height: 1; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
+  color: var(--c-center-label); text-shadow: 0 1px 2px #000;
+}
+.center img { width: var(--center-shard); height: var(--center-shard); object-fit: contain; transition: width var(--t-morph), height var(--t-morph); }
 
 /* ── Compact: ALT held OR a notification on screen (either is enough; both is the same).
       Thin strips, moved down below the ALT-only icons and the notification text. ── */
@@ -186,8 +190,8 @@ img { display: block; }
 /* mini logos and the shard stay, centered on the strips */
 .screen:is([data-alt="on"], [data-notify="on"]) .side { --logo: var(--thin-logo); --logo-offset: var(--thin-logo-offset); --logo-ring: var(--thin-logo-ring); }
 .screen:is([data-alt="on"], [data-notify="on"]) .center { height: var(--thin-h); background: none; clip-path: none; }
-.screen:is([data-alt="on"], [data-notify="on"]) .center span { display: none; }
-.screen:is([data-alt="on"], [data-notify="on"]) .center img { width: var(--thin-shard); height: var(--thin-shard); margin-top: 0; }
+.screen:is([data-alt="on"], [data-notify="on"]) .center__label { display: none; }
+.screen:is([data-alt="on"], [data-notify="on"]) .center img { width: var(--thin-shard); height: var(--thin-shard); }
 .screen:is([data-alt="on"], [data-notify="on"]) .side::before { opacity: 0; }
 .screen:is([data-alt="on"], [data-notify="on"]) .level { display: none; }
 
@@ -215,7 +219,7 @@ img { display: block; }
 <div class="screen" data-alt="off" data-notify="off">
   <div class="bars" data-bind="bars">
     <div class="side side--radiant" data-team="radiant"></div>
-    <div class="center"><span>VS</span><img src="assets/gem_shard.png" alt="" data-bind="shard"></div>
+    <div class="center"><span class="center__label">Gem level</span><img src="assets/gem_shard.png" alt="" data-bind="shard"></div>
     <div class="side side--dire" data-team="dire"></div>
   </div>
 

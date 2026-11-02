@@ -7,12 +7,12 @@ Reference: `reference.webp` (Felipe's draft). Prototype: `index.html`. Asset lis
 ## Placement
 
 - Centered horizontally, `--bars-top` (50px) from the top: just under the vanilla top bar.
-- Layout: `[Radiant panel][center plate][Dire panel]`; the center column is wide enough for the plate plus the overhanging logos, each panel `--side-w` × `--side-h` (520×48), the center plate `--center-w` × `--center-h` (114×48).
+- Layout: `[Radiant panel][center plate][Dire panel]`; the center column is wide enough for the plate plus the overhanging logos, each panel `--side-w` × `--side-h` (520×48), the center plate `--center-w` × `--center-h` (76×48).
 
 ## Anatomy
 
 - **Panels:** styled after the vanilla top bar, with a light top edge and a dark bottom edge (`--topbar-edge`). The outer ends are slanted (`--side-skew`), like the top bar's hero slots. All CSS. The background is **semitransparent** (`--topbar-glass`), like the score boxes beside the clock, so the game shows through. The bar track stays solid dark, so the fill keeps its contrast. (A solid background like the hero slots was tested and dropped.)
-- **Center plate:** semitransparent like the panels (`--topbar-glass`, with the same light top edge), in the trapezoid shape of the vanilla clock plate (bottom corners pulled in by `--center-taper`). It holds a gold "VS" and the gem shard. (The textured `topbar_center_bg.png` was tried first and replaced so the whole element reads as one semitransparent strip.)
+- **Center plate:** semitransparent like the panels (`--topbar-glass`, with the same light top edge), in the trapezoid shape of the vanilla clock plate (bottom corners pulled in by `--center-taper`). It holds a small **"GEM LEVEL"** label on top (`--fs-center-label` 11px, bold, uppercase, about the size of the game clock's digits) and the gem shard below it. The plate is just wide enough for the label. (A gold "VS" from the draft was dropped, and the plate narrowed from 114px.) (The textured `topbar_center_bg.png` was tried first and replaced so the whole element reads as one semitransparent strip.)
 - **Inside each panel, from the outside in:**
   1. **"LVL N"**, the team's gem level (`--fs-level`).
   2. **The bar** (`--bar-h` 22px), slanted to match the panel. A dark inset track, the team-coloured fill (`--radiant-fill` / `--dire-fill`) with a glossy top band (`--bar-gloss`).
@@ -31,7 +31,7 @@ The bars have two states. **Compact** is triggered by ALT held **or** a notifica
 **Compact version:**
 - The two fills, `--thin-h` (10px) tall, with a thin border (`--thin-border`: a dark outline plus a faint light rim) so they separate from busy backgrounds.
 - **Kept, shrunk:** the team logos (`--thin-logo` 24px, overhanging the strips' inner ends like the full ones) and the gem shard in the middle (`--thin-shard` 22px). They keep the "us vs them" and "this is about gems" reading without the full layout.
-- **Dropped:** the "LVL N" labels, the "VS", the center plate and the panel backgrounds. The element is about 24px tall in total.
+- **Dropped:** the "LVL N" labels, the "GEM LEVEL" label, the center plate and the panel backgrounds. The element is about 24px tall in total.
 - Strip top at `--compact-top` (150px); the mini logos reach 7px above it. That's below a typical two-line notification (a rampage or first blood ends at y ~131–140), and the lowest icon that ALT reveals, the round TP scroll timer under the hero portrait (y 87–122). That also clears "UNTIL HORN" and the respawn timers.
 - The two strips sit close together at the screen's center, `--thin-gap` (72px) apart: just room for the logos and the shard.
 - The point is that team progress stays glanceable while the vanilla UI has the stage. (Hiding the bars entirely was considered and dropped in favour of this.)
@@ -68,7 +68,7 @@ Gains are queued per team, so a big gain that crosses a level plays in order.
 - **Three-line notifications (accepted overlap):** first blood immediately followed by a multi-kill stacks a third line, down to y ~165, which the strips cross. It's rare enough that the position is tuned for the common two-line case instead.
 - **What counts as a "notification":** the prototype only has an on/off flag. The game needs the list of events that trigger it (first blood, streaks, Roshan, Aegis, …) and a duration for each, or a hook on the vanilla notification panel's visibility.
 - Should a level-up that happens in the compact state (ALT or notification) wait and flash once the bars are back to full size? Right now it flashes on the thin strip.
-- The "VS" and shard in the center plate come from the draft. The plate's original contents (clock, day/night) are not part of this element.
+- The shard in the center plate comes from the draft. The plate's original contents (clock, day/night) are not part of this element.
 
 ## Notes for a Panorama implementation
 
