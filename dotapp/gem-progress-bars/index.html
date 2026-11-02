@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dota++ · Gem Progress Bars</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,500;0,600;0,700;0,800;1,800&display=swap">
+<style>
+/* ── Tokens: every size, color and timing lives here (this block is the measurements spec).
+      Sizes are 1080p pixels: the whole screen is a 1920×1080 stage scaled to fit the window. ── */
+:root {
+  --font-ui: "Barlow", system-ui, sans-serif;
+  --c-text: #ffffff;
+  --c-text-dim: #a9adb3;
+  --c-focus: #f5c22b;
+
+  /* placement */
+  --bars-top: 50px;                     /* just under the vanilla topbar */
+  --compact-top: 150px;                 /* compact state (ALT or notification): strip top; the mini logos reach 7px above it, so they clear a typical two-line notification (y 78–140) and the ALT-only TP scroll timer (y 87–122) */
+
+  /* side panels: styled like the vanilla topbar slots */
+  --side-w: 520px;
+  --side-h: 48px;
+  --side-skew: 14deg;                   /* slanted outer ends, like the topbar's hero slots */
+  --topbar-glass: linear-gradient(rgba(40,42,46,.55), rgba(16,18,20,.68));   /* semitransparent, like the score boxes beside the clock */
+  --topbar-edge: inset 0 1px 0 rgba(255,255,255,.14), inset 0 -1px 0 rgba(0,0,0,.8), 0 2px 6px rgba(0,0,0,.7);
+  --side-pad: 14px;
+  --fs-level: 22px;
+  --level-w: 92px;
+
+  /* center plate: semitransparent like the panels, in the trapezoid shape of the vanilla clock plate, with the gem shard */
+  --center-w: 114px;
+  --center-h: 48px;
+  --center-taper: 12%;                  /* how far each bottom corner is pulled in */
+  --center-shard: 30px;
+  --fs-vs: 16px;
+  --c-vs: #f5c22b;
+
+  /* team logos sit on the panels' inner ends and cover them (including the slanted top corner) */
+  --logo: 56px;
+  --logo-offset: 6px;                   /* logo center, past the panel's inner end */
+  --logo-ring: 0 0 0 3px #111, 0 0 0 5px rgba(255,255,255,.18), 0 3px 8px rgba(0,0,0,.8);
+
+  /* the bar */
+  --bar-h: 22px;
+  --bar-track: linear-gradient(#090909, #1c1c1c);
+  --bar-inset: inset 0 2px 4px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.08);
+  --bar-gloss: linear-gradient(rgba(255,255,255,.35), rgba(255,255,255,.08) 45%, transparent 50%, rgba(0,0,0,.18));
+  --radiant-fill: linear-gradient(90deg, #1f7a2a, #4fc23a 70%, #9cf05a);
+  --radiant-gain: #d9ffb0;              /* "just gained" segment, ahead of the fill */
+  --radiant-glow: 120, 230, 80;
+  --dire-fill: linear-gradient(270deg, #9a1d12, #e0481e 70%, #ff9a3c);
+  --dire-gain: #ffd9a8;
+  --dire-glow: 255, 120, 50;
+  --fs-points: 15px;
+
+  /* compact version (ALT held or a notification on screen) */
+  --thin-h: 10px;
+  --thin-border: inset 0 1px 2px rgba(0,0,0,.9), 0 0 0 1px rgba(0,0,0,.85), 0 0 0 2px rgba(255,255,255,.22);   /* dark outline + faint light rim, to lift the strips off busy backgrounds */
+  --thin-gap: 72px;                     /* gap between the two strips: room for the mini logos' overhang and the shard */
+  --thin-logo: 24px;                    /* team logos stay, shrunk; they overhang the strips' inner ends like the full ones */
+  --thin-logo-offset: 4px;
+  --thin-logo-ring: 0 0 0 1.5px #111, 0 1px 3px rgba(0,0,0,.8);
+  --thin-shard: 22px;                   /* the gem shard stays in the middle; the VS and the plate go */
+
+  /* timings */
+  --t-move: 220ms;                      /* full ↔ compact: moving down / back up */
+  --t-morph: 240ms;                     /* full ↔ compact: shrinking / growing */
+  --t-fill: 450ms;
+  --t-gain-hold: 300ms;                 /* the gain segment shows this long before the fill catches up */
+  --t-levelup: 700ms;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+body { font-family: var(--font-ui); color: var(--c-text); }
+button { font: inherit; color: inherit; cursor: pointer; }
+img { display: block; }
+
+/* 1920×1080 stage over an in-game screenshot, scaled to fit the window (--fit is set by script).
+   The screenshot swaps with the state, so the vanilla elements each state makes room for are visible. */
+.screen {
+  position: absolute; left: 50%; top: 50%;
+  width: 1920px; height: 1080px;
+  transform: translate(-50%, -50%) scale(var(--fit, .5));
+  background: url(context-normal.webp) center / cover;
+  overflow: hidden;
+}
+.screen[data-notify="on"] { background-image: url(context-notify-rampage.webp); }
+.screen[data-alt="on"] { background-image: url(context-alt.webp); }
+
+/* ── Bars ── */
+.bars {
+  position: absolute; left: 50%; top: var(--bars-top); translate: -50% 0;
+  display: grid; grid-template-columns: var(--side-w) calc(var(--center-w) + var(--logo) + 2 * var(--logo-offset)) var(--side-w); align-items: start;
+  transition: top var(--t-move) ease-out;
+}
+
+.side {
+  position: relative; height: var(--side-h);
+  display: flex; align-items: center; gap: var(--side-pad);
+  transition: height var(--t-morph), opacity var(--t-morph);
+}
+/* the panel background is a separate skewed layer, so the content stays upright */
+.side::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: var(--topbar-glass); box-shadow: var(--topbar-edge);
+  transition: opacity var(--t-morph);
+}
+.side--radiant { padding: 0 calc(var(--logo) / 2 - var(--logo-offset) + var(--side-pad)) 0 var(--side-pad); }
+.side--dire { flex-direction: row-reverse; padding: 0 var(--side-pad) 0 calc(var(--logo) / 2 - var(--logo-offset) + var(--side-pad)); }
+.side--radiant::before { transform-origin: bottom; transform: skewX(var(--side-skew)); }
+.side--dire::before { transform-origin: bottom; transform: skewX(calc(-1 * var(--side-skew))); }
+
+.level { width: var(--level-w); flex: none; font-size: var(--fs-level); font-weight: 800; white-space: nowrap; text-shadow: 0 2px 2px #000; }
+.side--dire .level { text-align: right; }
+.level b { display: inline-block; }
+.is-levelup .level b { animation: level-pop var(--t-levelup) ease-out; }
+@keyframes level-pop { 0% { scale: 1.6; color: #fff; } 100% { scale: 1; } }
+
+.logo {
+  position: absolute; top: 50%; translate: 0 -50%; z-index: 1;
+  width: var(--logo); height: var(--logo); border-radius: 50%; box-shadow: var(--logo-ring);
+  transition: opacity var(--t-morph), width var(--t-morph), height var(--t-morph), left var(--t-morph), right var(--t-morph);
+}
+.side--radiant .logo { right: calc(var(--logo) / -2 - var(--logo-offset)); }
+.side--dire .logo { left: calc(var(--logo) / -2 - var(--logo-offset)); }
+
+.bar {
+  position: relative; flex: 1; height: var(--bar-h);
+  background: var(--bar-track); box-shadow: var(--bar-inset);
+  overflow: hidden;
+  transition: height var(--t-morph);
+}
+.side--radiant .bar { --fill: var(--radiant-fill); --gain: var(--radiant-gain); --glow: var(--radiant-glow); transform: skewX(var(--side-skew)); }
+.side--dire .bar { --fill: var(--dire-fill); --gain: var(--dire-gain); --glow: var(--dire-glow); transform: skewX(calc(-1 * var(--side-skew))); }
+
+/* two layers: the gain segment jumps to the new value at once, the fill catches up after --t-gain-hold */
+.bar__gain, .bar__fill { position: absolute; top: 0; bottom: 0; width: calc(var(--p) * 100%); }
+.bar__gain { background: var(--gain); }
+.bar__fill { background: var(--fill); transition: width var(--t-fill) ease-out var(--t-gain-hold); }
+.bar__fill::after { content: ""; position: absolute; inset: 0; background: var(--bar-gloss); }
+.side--radiant :is(.bar__gain, .bar__fill) { left: 0; }   /* Radiant fills left → right */
+.side--dire :is(.bar__gain, .bar__fill) { right: 0; }     /* Dire fills right → left */
+.is-resetting :is(.bar__gain, .bar__fill) { transition: none; }
+
+/* points: only on hover */
+.bar__points {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: var(--fs-points); font-weight: 700; text-shadow: 0 1px 2px #000, 0 0 4px #000;
+  opacity: 0; transition: opacity 120ms;
+}
+.side--radiant .bar__points { transform: skewX(calc(-1 * var(--side-skew))); }
+.side--dire .bar__points { transform: skewX(var(--side-skew)); }
+.side:hover .bar__points { opacity: 1; }
+
+/* level-up flash: one bright pulse of the team colour over the bar and the logo — noticeable, not a takeover */
+.bar::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: rgba(255,255,255,.9); opacity: 0;
+}
+.is-levelup .bar::after { animation: flash var(--t-levelup) ease-out; }
+.is-levelup .bar { animation: bar-glow var(--t-levelup) ease-out; }
+.is-levelup .logo { animation: logo-glow var(--t-levelup) ease-out; }
+@keyframes flash { 0% { opacity: .9; } 100% { opacity: 0; } }
+@keyframes bar-glow { 0% { box-shadow: var(--bar-inset), 0 0 18px 6px rgba(var(--glow), .9); } 100% { box-shadow: var(--bar-inset), 0 0 0 0 rgba(var(--glow), 0); } }
+@keyframes logo-glow { 0% { box-shadow: var(--logo-ring), 0 0 0 14px rgba(255,255,255,.35); } 100% { box-shadow: var(--logo-ring), 0 0 0 26px rgba(255,255,255,0); } }
+
+.center {
+  position: relative; justify-self: center; width: var(--center-w); height: var(--center-h);
+  background: linear-gradient(rgba(255,255,255,.14) 1px, transparent 1px), var(--topbar-glass);   /* top highlight, like the panels' edge */
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--center-taper)) 100%, var(--center-taper) 100%);
+  display: grid; justify-items: center; align-content: center;
+  transition: opacity var(--t-morph);
+}
+.center span { font-size: var(--fs-vs); font-weight: 800; font-style: italic; line-height: 1; color: var(--c-vs); text-shadow: 0 2px 2px #000; }
+.center img { width: var(--center-shard); height: var(--center-shard); margin-top: -4px; transition: width var(--t-morph), height var(--t-morph); }
+
+/* ── Compact: ALT held OR a notification on screen (either is enough; both is the same).
+      Thin strips, moved down below the ALT-only icons and the notification text. ── */
+.screen:is([data-alt="on"], [data-notify="on"]) .bars { top: var(--compact-top); grid-template-columns: var(--side-w) var(--thin-gap) var(--side-w); }
+.screen:is([data-alt="on"], [data-notify="on"]) .side { height: var(--thin-h); padding: 0; }
+.screen:is([data-alt="on"], [data-notify="on"]) .bar { height: var(--thin-h); --bar-inset: var(--thin-border); }
+.screen:is([data-alt="on"], [data-notify="on"]) .bar__points { opacity: 0; pointer-events: none; }
+/* mini logos and the shard stay, centered on the strips */
+.screen:is([data-alt="on"], [data-notify="on"]) .side { --logo: var(--thin-logo); --logo-offset: var(--thin-logo-offset); --logo-ring: var(--thin-logo-ring); }
+.screen:is([data-alt="on"], [data-notify="on"]) .center { height: var(--thin-h); background: none; clip-path: none; }
+.screen:is([data-alt="on"], [data-notify="on"]) .center span { display: none; }
+.screen:is([data-alt="on"], [data-notify="on"]) .center img { width: var(--thin-shard); height: var(--thin-shard); margin-top: 0; }
+.screen:is([data-alt="on"], [data-notify="on"]) .side::before { opacity: 0; }
+.screen:is([data-alt="on"], [data-notify="on"]) .level { display: none; }
+
+/* prototype-only controls */
+.demo {
+  position: absolute; left: 24px; top: 160px; width: 360px; z-index: 2;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+  padding: 10px 14px; border: 1px dashed rgba(255,255,255,.45); border-radius: 6px; background: rgba(0,0,0,.75);
+  font-size: 14px;
+}
+.demo__label { flex-basis: 100%; text-transform: uppercase; letter-spacing: .08em; font-size: 12px; color: var(--c-text-dim); }
+.demo__row { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.demo button { padding: 5px 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.35); border-radius: 4px; }
+.demo button[aria-pressed="true"] { background: rgba(245,194,43,.25); border-color: var(--c-focus); }
+.demo a { color: var(--c-focus); }
+.demo__hint { flex-basis: 100%; margin: 0; color: var(--c-text-dim); font-size: 13px; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-move: 0ms; --t-morph: 0ms; --t-fill: 0ms; --t-gain-hold: 0ms; }
+  .is-levelup :is(.bar, .logo, .level b), .is-levelup .bar::after { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="screen" data-alt="off" data-notify="off">
+  <div class="bars" data-bind="bars">
+    <div class="side side--radiant" data-team="radiant"></div>
+    <div class="center"><span>VS</span><img src="assets/gem_shard.png" alt=""></div>
+    <div class="side side--dire" data-team="dire"></div>
+  </div>
+
+  <aside class="demo">
+    <span class="demo__label">Prototype controls</span>
+    <div class="demo__row">Radiant
+      <button data-action="gain" data-team="radiant" data-amount="51">+51</button>
+      <button data-action="gain" data-team="radiant" data-amount="200">+200</button>
+    </div>
+    <div class="demo__row">Dire
+      <button data-action="gain" data-team="dire" data-amount="51">+51</button>
+      <button data-action="gain" data-team="dire" data-amount="200">+200</button>
+    </div>
+    <div class="demo__row">
+      <button data-action="alt" aria-pressed="false">ALT held</button>
+      <button data-action="notify">Simulate rampage</button>
+    </div>
+    <p class="demo__hint">Hold the real ALT key too. Hover a bar for its points.</p>
+    <div class="demo__row"><button data-action="reset">Reset demo</button><a href="assets.html" target="_blank" rel="noopener">Asset list</a></div>
+  </aside>
+</div>
+
+<script>
+// ── Content: edit here, markup is rendered from it ──
+const DATA = {
+  levelCost: 500,                // gem points per level (assumed flat; the real curve may grow per level)
+  notifyDuration: 4000,          // ms a simulated notification stays on screen (a rampage: a typical two-line announcement)
+  teams: {
+    radiant: { level: 10, points: 340, logo: "assets/logo_radiant.png", name: "Radiant" },
+    dire:    { level: 8,  points: 120, logo: "assets/logo_dire.png",    name: "Dire" },
+  },
+};
+const START = structuredClone(DATA.teams);
+
+const screen = document.querySelector(".screen");
+const ms = (name) => parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+const wait = (t) => new Promise((r) => setTimeout(r, t));
+const sideEl = (team) => screen.querySelector(`.side[data-team="${team}"]`);
+
+function renderSide(team) {
+  const t = DATA.teams[team];
+  const el = sideEl(team);
+  el.innerHTML = `
+    <span class="level">LVL <b>${t.level}</b></span>
+    <div class="bar" role="progressbar" aria-label="${t.name} gem level ${t.level}"
+         aria-valuemin="0" aria-valuemax="${DATA.levelCost}" aria-valuenow="${t.points}">
+      <div class="bar__gain"></div><div class="bar__fill"></div>
+      <span class="bar__points">${t.points} / ${DATA.levelCost}</span>
+    </div>
+    <img class="logo" src="${t.logo}" alt="${t.name}">`;
+  setProgress(team, t.points);
+}
+
+function setProgress(team, points) {
+  const el = sideEl(team);
+  el.querySelector(".bar").style.setProperty("--p", Math.min(points / DATA.levelCost, 1));
+  el.querySelector(".bar__points").textContent = `${Math.min(points, DATA.levelCost)} / ${DATA.levelCost}`;
+  el.querySelector(".bar").setAttribute("aria-valuenow", Math.min(points, DATA.levelCost));
+}
+
+// Gains queue per team, so a big gain that crosses a level plays fill → flash → reset → remainder in order
+const queues = { radiant: Promise.resolve(), dire: Promise.resolve() };
+function gain(team, amount) {
+  queues[team] = queues[team].then(() => applyGain(team, amount));
+}
+async function applyGain(team, amount) {
+  const t = DATA.teams[team];
+  const el = sideEl(team);
+  t.points += amount;
+  setProgress(team, t.points);
+  if (t.points < DATA.levelCost) return;
+  // level up: let the fill reach the end, flash, then restart from empty with the overflow
+  await wait(ms("--t-gain-hold") + ms("--t-fill"));
+  t.points -= DATA.levelCost;
+  t.level += 1;
+  el.querySelector(".level b").textContent = t.level;
+  el.querySelector(".bar").setAttribute("aria-label", `${t.name} gem level ${t.level}`);
+  el.classList.add("is-levelup");
+  await wait(ms("--t-levelup") / 2);
+  el.classList.add("is-resetting");
+  setProgress(team, 0);
+  el.offsetWidth;                // commit the empty bar before turning transitions back on
+  el.classList.remove("is-resetting");
+  await wait(ms("--t-levelup") / 2);
+  el.classList.remove("is-levelup");
+  if (t.points > 0) await applyGain(team, 0);
+}
+
+// ALT and notifications both switch the bars to the compact version; either one is enough
+const setAlt = (on) => {
+  screen.dataset.alt = on ? "on" : "off";
+  screen.querySelector('[data-action="alt"]').setAttribute("aria-pressed", on);
+};
+let notifyTimer;
+const notify = () => {
+  screen.dataset.notify = "on";
+  clearTimeout(notifyTimer);
+  notifyTimer = setTimeout(() => (screen.dataset.notify = "off"), DATA.notifyDuration);
+};
+
+screen.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-action]");
+  if (!btn) return;
+  const { action, team, amount } = btn.dataset;
+  if (action === "gain") gain(team, +amount);
+  if (action === "alt") setAlt(screen.dataset.alt !== "on");
+  if (action === "notify") notify();
+  if (action === "reset") {
+    DATA.teams = structuredClone(START);
+    setAlt(false); clearTimeout(notifyTimer); screen.dataset.notify = "off";
+    renderSide("radiant"); renderSide("dire");
+  }
+});
+addEventListener("keydown", (e) => { if (e.key === "Alt") { e.preventDefault(); setAlt(true); } });
+addEventListener("keyup", (e) => { if (e.key === "Alt") { e.preventDefault(); setAlt(false); } });
+addEventListener("blur", () => setAlt(false));   // ALT released outside the window
+
+const fit = () => document.documentElement.style.setProperty("--fit", Math.min(innerWidth / 1920, innerHeight / 1080));
+addEventListener("resize", fit);
+fit();
+renderSide("radiant");
+renderSide("dire");
+// deep links to a state, e.g. ?alt=on&notify=on (handy for reviews and screenshots)
+const q = new URLSearchParams(location.search);
+if (q.get("alt") === "on") setAlt(true);
+if (q.get("notify") === "on") screen.dataset.notify = "on";
+</script>
+</body>
+</html>

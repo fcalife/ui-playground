@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gem Progress Bars · Assets</title>
+<style>
+:root { --bg: #15171a; --card: #1f2226; --line: #33383e; --text: #ece8df; --text-dim: #a9adb3; --accent: #f5c22b; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, sans-serif; }
+main { max-width: 900px; margin: 0 auto; padding: 40px 16px; }
+h1 { margin: 0 0 4px; font-size: 26px; }
+.intro { margin: 0 0 28px; color: var(--text-dim); }
+h2 { margin: 28px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent); }
+table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); }
+td { padding: 8px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+td:first-child { width: 30%; }
+.size { width: 22%; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+img { width: 28px; height: 28px; object-fit: contain; vertical-align: middle; margin-right: 8px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.dim { color: var(--text-dim); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Gem Progress Bars: assets</h1>
+  <p class="intro">Every file the prototype uses. The panels, center plate, bars, fills and flash are CSS, not art. Sizes are display sizes in px on the 1920×1080 stage, not the source files' resolution. <a href="./">Back to prototype</a></p>
+
+  <h2>Assets</h2>
+  <table>
+    <tr><td><img src="assets/gem_shard.png" alt=""><a href="assets/gem_shard.png">gem_shard.png</a></td><td>Gem shard on the center plate, under "VS". Stays in the compact state.</td><td class="size">30×30 · 22×22 compact</td></tr>
+    <tr><td><img src="assets/logo_radiant.png" alt=""><a href="assets/logo_radiant.png">logo_radiant.png</a></td><td>Radiant logo at the inner end of the left panel.</td><td class="size">56×56 · 24×24 compact</td></tr>
+    <tr><td><img src="assets/logo_dire.png" alt=""><a href="assets/logo_dire.png">logo_dire.png</a></td><td>Dire logo at the inner end of the right panel.</td><td class="size">56×56 · 24×24 compact</td></tr>
+  </table>
+
+  <h2>Prototype only</h2>
+  <table>
+    <tr><td><a href="context-normal.webp">context-normal.webp</a></td><td>In-game screenshot, default state.</td><td class="size">1920×1080 stage</td></tr>
+    <tr><td><a href="context-alt.webp">context-alt.webp</a></td><td>In-game screenshot with ALT held (shows the vanilla elements the bars move for).</td><td class="size">1920×1080 stage</td></tr>
+    <tr><td><a href="context-notify-rampage.webp">context-notify-rampage.webp</a></td><td>In-game screenshot with a rampage notification (a typical two-line announcement), shown while a notification is simulated.</td><td class="size">1920×1080 stage</td></tr>
+    <tr><td><a href="context-notify-triplekill.webp">context-notify-triplekill.webp</a></td><td>Rare three-line case (first blood + triple kill), kept for reference. Not used by the page.</td><td class="size">—</td></tr>
+    <tr><td><a href="context-notify-firstblood.webp">context-notify-firstblood.webp</a></td><td>First blood notification, kept for reference. Not used by the page.</td><td class="size">—</td></tr>
+    <tr><td><a href="reference.webp">reference.webp</a></td><td>Felipe's original draft, kept for comparison. Not used by the page.</td><td class="size">—</td></tr>
+  </table>
+</main>
+</body>
+</html>
