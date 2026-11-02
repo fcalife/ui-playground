@@ -58,11 +58,12 @@ Gains are queued per team, so a big gain that crosses a level plays in order.
   - `context-normal.webp`: default.
   - `context-alt.webp`: ALT held.
   - `context-notify-rampage.webp`: a rampage notification, a typical two-line announcement. `context-notify-firstblood.webp` and `context-notify-triplekill.webp` are kept for reference.
-- "Prototype controls" box: point gains for each team, ALT toggle, simulated rampage (4s), reset, asset list. The real ALT key works too.
+- "Prototype controls" box: point gains for each team, ALT toggle, center icon (`gem_shard` / `gem_shard_alt`), simulated rampage (4s), reset, asset list. The real ALT key works too.
 - Deep links to states: `?alt=on`, `?notify=on`, or both.
 
 ## Assumptions / open questions
 
+- **Center icon:** `gem_shard.png` or `gem_shard_alt.png` (a gem orb)? Both are switchable in the prototype.
 - **Level cost** is a flat 500 points per level (`DATA.levelCost`). The real curve probably grows per level.
 - **Three-line notifications (accepted overlap):** first blood immediately followed by a multi-kill stacks a third line, down to y ~165, which the strips cross. It's rare enough that the position is tuned for the common two-line case instead.
 - **What counts as a "notification":** the prototype only has an on/off flag. The game needs the list of events that trigger it (first blood, streaks, Roshan, Aegis, …) and a duration for each, or a hook on the vanilla notification panel's visibility.

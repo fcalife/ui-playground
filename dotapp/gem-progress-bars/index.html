@@ -175,7 +175,7 @@ img { display: block; }
   transition: opacity var(--t-morph);
 }
 .center span { font-size: var(--fs-vs); font-weight: 800; font-style: italic; line-height: 1; color: var(--c-vs); text-shadow: 0 2px 2px #000; }
-.center img { width: var(--center-shard); height: var(--center-shard); margin-top: -4px; transition: width var(--t-morph), height var(--t-morph); }
+.center img { width: var(--center-shard); height: var(--center-shard); margin-top: -4px; object-fit: contain; transition: width var(--t-morph), height var(--t-morph); }
 
 /* ── Compact: ALT held OR a notification on screen (either is enough; both is the same).
       Thin strips, moved down below the ALT-only icons and the notification text. ── */
@@ -215,7 +215,7 @@ img { display: block; }
 <div class="screen" data-alt="off" data-notify="off">
   <div class="bars" data-bind="bars">
     <div class="side side--radiant" data-team="radiant"></div>
-    <div class="center"><span>VS</span><img src="assets/gem_shard.png" alt=""></div>
+    <div class="center"><span>VS</span><img src="assets/gem_shard.png" alt="" data-bind="shard"></div>
     <div class="side side--dire" data-team="dire"></div>
   </div>
 
@@ -232,6 +232,10 @@ img { display: block; }
     <div class="demo__row">
       <button data-action="alt" aria-pressed="false">ALT held</button>
       <button data-action="notify">Simulate rampage</button>
+    </div>
+    <div class="demo__row">Center shard:
+      <button data-action="shard" data-src="assets/gem_shard.png" aria-pressed="true">gem_shard</button>
+      <button data-action="shard" data-src="assets/gem_shard_alt.png" aria-pressed="false">gem_shard_alt</button>
     </div>
     <p class="demo__hint">Hold the real ALT key too. Hover a bar for its points.</p>
     <div class="demo__row"><button data-action="reset">Reset demo</button><a href="assets.html" target="_blank" rel="noopener">Asset list</a></div>
@@ -319,10 +323,14 @@ const notify = () => {
 screen.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-action]");
   if (!btn) return;
-  const { action, team, amount } = btn.dataset;
+  const { action, team, amount, src } = btn.dataset;
   if (action === "gain") gain(team, +amount);
   if (action === "alt") setAlt(screen.dataset.alt !== "on");
   if (action === "notify") notify();
+  if (action === "shard") {
+    screen.querySelector('[data-bind="shard"]').src = src;
+    screen.querySelectorAll('[data-action="shard"]').forEach((b) => b.setAttribute("aria-pressed", b === btn));
+  }
   if (action === "reset") {
     DATA.teams = structuredClone(START);
     setAlt(false); clearTimeout(notifyTimer); screen.dataset.notify = "off";
