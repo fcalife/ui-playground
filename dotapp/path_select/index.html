@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dota++ · Path Select</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,500;0,600;0,700;1,500&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap">
+<style>
+/* ── Tokens: every size, color and timing lives here (this block is the measurements spec).
+      Sizes are 1080p pixels: the whole screen is a 1920×1080 stage scaled to fit the window. ── */
+:root {
+  --font-ui: "Barlow", system-ui, sans-serif;
+  --font-head: "Barlow Semi Condensed", "Barlow", sans-serif;
+  --c-text: #f2efe8;
+  --c-text-dim: #9aa0a8;
+  --c-text-faint: #6b7178;
+  --c-gold: #e7c46a;                    /* "selected": the one place gold is used */
+  --c-focus: #f5c22b;
+
+  /* Dota's two surface types: solid slabs for structure, semitransparent gradients over the game */
+  --slab: linear-gradient(#1d2126, #121418);
+  --slab-deep: linear-gradient(#15181c, #0c0e10);
+  --slab-edge: inset 0 1px 0 rgba(255,255,255,.07), inset 0 0 0 1px rgba(255,255,255,.04);
+  --glass: linear-gradient(rgba(14,16,19,.72), rgba(10,12,14,.9));
+  --hairline: rgba(255,255,255,.09);
+  --backdrop: radial-gradient(ellipse at center, rgba(0,0,0,.55), rgba(0,0,0,.88) 75%);
+
+  /* panel shell */
+  --panel-w: 1480px;
+  --panel-h: 920px;
+  --panel-pad: 40px;
+  --panel-shadow: 0 30px 80px rgba(0,0,0,.85);
+  --fs-title: 46px;
+  --fs-sub: 18px;
+  --head-h: 112px;
+  --foot-h: 96px;
+  --minimap-icon: 64px;                 /* the hero's 32px minimap icon at exactly 2× (pixel art: whole factors only) */
+
+  /* columns */
+  --col-hero: 360px;
+  --col-forks: 470px;
+  --col-forks-rated: 540px;             /* experiment: room for the ratings on each slab */
+  --col-gap: 32px;
+
+  /* path accents (placeholder palette; each path borrows the colour of its lead gem) */
+  --accent-fury: 224, 83, 44;
+  --accent-stone: 111, 182, 224;
+  --accent-tricks: 176, 122, 232;
+  --accent-manual: 150, 156, 164;
+
+  /* forks (the slanted path slabs) */
+  --fork-h: 120px;
+  --fork-skew: -8deg;
+  --fork-hover-shift: 16px;
+  --fork-sel-shift: 22px;
+  --fork-gem: 48px;
+  --fs-fork: 28px;
+
+  /* shared bits */
+  --ability: 52px;
+  --fs-small: 14px;
+  --pip-w: 22px;
+  --pip-h: 6px;
+  --c-pip: rgba(255,255,255,.12);
+
+  /* experiment: hero column previews the path */
+  --hero-crest: 84px;
+  --hero-gem: 20px;
+
+  --btn-go: linear-gradient(#64b33f, #3c7f25 55%, #2c6219);
+  --btn-go-edge: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.6);
+
+  --t-hover: 150ms;
+  --t-enter: 320ms;
+  --t-exit: 260ms;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+body { font-family: var(--font-ui); color: var(--c-text); }
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; text-align: inherit; }
+button:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 3px; }
+img { display: block; }
+h1, h2, h3, p { margin: 0; }
+
+.screen {
+  position: absolute; left: 50%; top: 50%;
+  width: 1920px; height: 1080px;
+  transform: translate(-50%, -50%) scale(var(--fit, .5));
+  background: url(context-ingame.webp) center / cover;
+  overflow: hidden;
+}
+.backdrop { position: absolute; inset: 0; display: grid; place-items: center; background: var(--backdrop); transition: opacity var(--t-exit); }
+.screen[data-state="confirmed"] .backdrop { opacity: 0; pointer-events: none; }
+
+/* ── Shell: header slab, body, footer slab ── */
+.panel {
+  width: var(--panel-w); height: var(--panel-h);
+  display: grid; grid-template-rows: var(--head-h) 1fr var(--foot-h);
+  background: var(--glass); box-shadow: var(--panel-shadow), var(--slab-edge);
+  animation: enter var(--t-enter) ease-out;
+}
+@keyframes enter { from { opacity: 0; scale: .97; } }
+.head {
+  display: flex; align-items: center; gap: 24px; padding: 0 var(--panel-pad);
+  background: var(--slab); box-shadow: var(--slab-edge), 0 1px 0 rgba(0,0,0,.6);
+}
+.head__hero { width: var(--minimap-icon); height: var(--minimap-icon); image-rendering: pixelated; }
+.head h1 { font: 700 var(--fs-title)/1 var(--font-head); letter-spacing: .1em; text-transform: uppercase; }
+.head p { margin-top: 6px; font-size: var(--fs-sub); color: var(--c-text-dim); }
+.body {
+  display: grid; grid-template-columns: var(--col-hero) var(--col-forks) 1fr; gap: var(--col-gap);
+  padding: 28px var(--panel-pad); min-height: 0;
+}
+.foot {
+  display: flex; align-items: center; justify-content: flex-end; gap: 32px; padding: 0 var(--panel-pad);
+  background: var(--slab); box-shadow: var(--slab-edge);
+}
+.foot__hint { font-size: var(--fs-sub); color: var(--c-text-dim); }
+.foot__hint b { color: var(--c-gold); font-weight: 600; }
+.confirm {
+  min-width: 300px; padding: 16px 32px; text-align: center;
+  font: 700 22px/1 var(--font-head); letter-spacing: .12em; text-transform: uppercase;
+  background: var(--btn-go); box-shadow: var(--btn-go-edge); text-shadow: 0 1px 2px rgba(0,0,0,.6);
+  transition: filter var(--t-hover), opacity var(--t-hover);
+}
+.confirm:hover:not(:disabled) { filter: brightness(1.12); }
+.confirm:disabled { opacity: .35; cursor: default; filter: grayscale(1); }
+
+/* shared pieces */
+.gems { display: flex; gap: 6px; }
+.ab { position: relative; flex: none; }
+.ab img { width: var(--ability); height: var(--ability); box-shadow: 0 0 0 1px #000, 0 2px 4px rgba(0,0,0,.7); }
+.ab b { position: absolute; left: 3px; top: 2px; font: 700 13px/1 var(--font-ui); text-shadow: 0 0 3px #000, 0 1px 2px #000; }
+.stats { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: center; font-size: var(--fs-small); color: var(--c-text-dim); text-transform: uppercase; letter-spacing: .06em; }
+.pips { display: flex; gap: 4px; }
+.pips i { width: var(--pip-w); height: var(--pip-h); background: var(--c-pip); transform: skewX(-20deg); }
+.pips i.on { background: rgb(var(--acc)); box-shadow: 0 0 6px rgba(var(--acc), .5); }
+[data-path="fury"] { --acc: var(--accent-fury); }
+[data-path="stone"] { --acc: var(--accent-stone); }
+[data-path="tricks"] { --acc: var(--accent-tricks); }
+[data-path="manual"] { --acc: var(--accent-manual); }
+
+/* ── Hero column ── */
+.hero {
+  display: grid; align-content: center; gap: 18px; padding: 22px;
+  background: var(--slab-deep); box-shadow: var(--slab-edge);
+}
+.hero__frame { position: relative; }
+.hero__portrait { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; box-shadow: 0 0 0 1px #000, 0 0 0 2px var(--hairline); }
+.hero h2 { font: 700 30px/1 var(--font-head); letter-spacing: .08em; text-transform: uppercase; }
+.hero__abilities { display: flex; gap: 10px; }
+.hero__ab { display: grid; justify-items: center; gap: 6px; }
+
+/* experiment: the hero column previews the hovered / selected path */
+.hero__crest, .hero__gems { display: none; }
+.screen[data-exp-hero="on"] .hero__crest {
+  display: block; position: absolute; right: -14px; bottom: -18px; width: var(--hero-crest); height: var(--hero-crest);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.9));
+}
+.screen[data-exp-hero="on"] .hero__crest[hidden] { display: none; }
+.screen[data-exp-hero="on"] .hero__gems { display: flex; gap: 2px; min-height: var(--hero-gem); }
+.hero__gems img { width: var(--hero-gem); height: var(--hero-gem); }
+
+/* ── Forks: the slanted path slabs ── */
+.forks { display: grid; align-content: center; gap: 16px; }
+.fork {
+  position: relative; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 18px;
+  height: var(--fork-h); padding: 0 28px 0 34px;
+  background: linear-gradient(90deg, rgba(var(--acc), .3), rgba(14,16,19,.88) 55%); box-shadow: var(--slab-edge), inset 4px 0 0 rgb(var(--acc));
+  transform: skewX(var(--fork-skew)); transition: translate var(--t-hover) ease-out, box-shadow var(--t-hover), opacity var(--t-hover);
+}
+.fork > * { transform: skewX(calc(-1 * var(--fork-skew))); }
+.fork .gems img { width: var(--fork-gem); height: var(--fork-gem); }
+.fork h3 { font: 700 var(--fs-fork)/1 var(--font-head); letter-spacing: .06em; text-transform: uppercase; }
+.fork .stats { display: none; }
+.fork:hover, .fork:focus-visible { translate: var(--fork-hover-shift) 0; }
+.fork[aria-pressed="true"] { translate: var(--fork-sel-shift) 0; box-shadow: var(--slab-edge), inset 4px 0 0 rgb(var(--acc)), inset 0 0 0 2px var(--c-gold), 0 0 24px rgba(231,196,106,.3); }
+.fork--manual { height: 64px; background: rgba(255,255,255,.03); box-shadow: inset 0 0 0 1px var(--hairline); }
+.fork--manual h3 { font-size: 20px; color: var(--c-text-dim); }
+.fork--manual .gems img { width: 34px; height: 34px; opacity: .7; }
+.screen[data-selected] .fork:not([aria-pressed="true"]):not(:hover) { opacity: .6; }
+
+/* experiment: ratings on each slab, so paths compare without hovering */
+.screen[data-exp-ratings="on"] .body { grid-template-columns: var(--col-hero) var(--col-forks-rated) 1fr; }
+.screen[data-exp-ratings="on"] .fork:not(.fork--manual) { grid-template-columns: auto 1fr auto; }
+.screen[data-exp-ratings="on"] .fork h3 { font-size: 24px; }
+.screen[data-exp-ratings="on"] .detail h2 { font-size: 42px; }   /* the narrower detail pane would wrap long names to two lines */
+.screen[data-exp-ratings="on"] .fork .stats { display: grid; gap: 4px 8px; font-size: 11px; --pip-w: 14px; --pip-h: 5px; }
+
+/* ── Detail pane: the hovered path, else the selected one ── */
+.detail {
+  position: relative; display: grid; align-content: start; gap: 18px; padding: 34px 40px; overflow: hidden;
+  background: radial-gradient(ellipse 80% 60% at 85% 0%, rgba(var(--acc), .32), transparent 70%), var(--slab-deep);
+  box-shadow: var(--slab-edge), inset 0 3px 0 rgb(var(--acc));
+}
+.detail:not([data-path]) { --acc: 255, 255, 255; background: var(--slab-deep); box-shadow: var(--slab-edge); }
+.detail__crest { position: absolute; right: -40px; top: -40px; width: 300px; height: 300px; opacity: .14; }
+.detail h2 { font: 700 52px/1 var(--font-head); letter-spacing: .05em; text-transform: uppercase; }
+.detail__tag { font-size: 19px; color: var(--c-text-dim); max-width: 560px; line-height: 1.4; }
+.detail__rows { display: grid; gap: 10px; margin-top: 6px; }
+.detail__row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; padding: 8px 14px; background: rgba(0,0,0,.28); }
+.detail__row .ab img { width: 54px; height: 54px; }
+.detail__row strong { font: 600 21px/1.1 var(--font-head); letter-spacing: .03em; }
+.detail__row .gems { gap: 14px; }
+.detail__gem { display: grid; justify-items: center; gap: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--c-text-dim); }
+.detail__gem img { width: 48px; height: 48px; }
+.detail__empty { align-self: center; justify-self: center; font: 600 24px/1.3 var(--font-head); letter-spacing: .08em; text-transform: uppercase; color: var(--c-text-faint); }
+
+/* confirmed toast (stands in for the match continuing) */
+.toast {
+  position: absolute; left: 50%; top: 150px; translate: -50% 0; padding: 14px 28px;
+  font: 600 22px/1 var(--font-head); letter-spacing: .08em; text-transform: uppercase;
+  background: var(--glass); box-shadow: var(--slab-edge), inset 0 -3px 0 var(--c-gold);
+  opacity: 0; transition: opacity var(--t-exit);
+}
+.toast b { color: var(--c-gold); }
+.screen[data-state="confirmed"] .toast { opacity: 1; }
+
+/* prototype-only controls */
+.demo {
+  position: absolute; left: 24px; top: 160px; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; width: 210px;
+  padding: 10px 14px; border: 1px dashed rgba(255,255,255,.45); border-radius: 6px; background: rgba(0,0,0,.75); font-size: 14px;
+}
+.demo span { flex-basis: 100%; text-transform: uppercase; letter-spacing: .08em; font-size: 12px; color: var(--c-text-dim); }
+.demo button { padding: 5px 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.35); border-radius: 4px; }
+.demo button[aria-pressed="true"] { background: rgba(245,194,43,.25); border-color: var(--c-focus); }
+.demo a { color: var(--c-focus); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-hover: 0ms; --t-enter: 0ms; --t-exit: 0ms; }
+  .fork:hover, .fork:focus-visible, .fork[aria-pressed="true"] { translate: none; }
+}
+</style>
+</head>
+<body>
+<div class="screen" data-state="choosing" data-exp-hero="off" data-exp-ratings="off">
+  <div class="backdrop">
+    <section class="panel" role="dialog" aria-modal="true" aria-labelledby="ps-title">
+      <header class="head">
+        <img class="head__hero" data-bind="heroChip" alt="">
+        <div><h1 id="ps-title">Choose your path</h1><p data-bind="sub"></p></div>
+      </header>
+      <div class="body" data-bind="body"></div>
+      <footer class="foot">
+        <p class="foot__hint" data-bind="hint"></p>
+        <button class="confirm" data-action="confirm" disabled data-bind="confirm">Confirm</button>
+      </footer>
+    </section>
+  </div>
+  <p class="toast" data-bind="toast"></p>
+
+  <aside class="demo">
+    <span>Prototype controls</span>
+    <span>Experiments</span>
+    <button data-action="exp" data-exp="hero" aria-pressed="false">Hero preview</button>
+    <button data-action="exp" data-exp="ratings" aria-pressed="false">Slab ratings</button>
+    <button data-action="reset">Reset demo</button>
+    <a href="assets.html" target="_blank" rel="noopener">Asset list</a>
+  </aside>
+</div>
+
+<script>
+// ── Content: edit here, markup is rendered from it ──
+// PLACEHOLDER paths: names, taglines, gem picks and ratings are drafts for layout, not design decisions.
+const HERO = {
+  name: "Monkey King",
+  portrait: "assets/mk_portrait.png",
+  minimap: "assets/mk_minimap.png",
+  blurb: "Your path decides which gems each ability gets this match. You can still slot every gem yourself.",
+  abilities: [
+    { key: "Q", name: "Boundless Strike",  icon: "assets/mk_q_boundless_strike.png" },
+    { key: "W", name: "Tree Dance",        icon: "assets/mk_w_tree_dance.png" },
+    { key: "E", name: "Jingu Mastery",     icon: "assets/mk_e_jingu_mastery.png" },
+    { key: "R", name: "Wukong's Command",  icon: "assets/mk_r_wukongs_command.png" },
+  ],
+};
+const PATHS = [
+  { id: "fury", name: "Boundless Fury", tagline: "Hit first, hit hard. Burst heroes down before they can react.",
+    crest: ["power", "destruction"], stats: { Damage: 3, Survival: 1, Mobility: 2 },
+    gems: { Q: ["power", "destruction"], W: ["mobility"], E: ["power"], R: ["destruction", "power"] } },
+  { id: "stone", name: "Stone Hide", tagline: "Shrug off the fight and outlast everyone still standing in it.",
+    crest: ["protection", "vitality"], stats: { Damage: 1, Survival: 3, Mobility: 1 },
+    gems: { Q: ["protection"], W: ["vitality", "mobility"], E: ["vitality"], R: ["protection", "vitality"] } },
+  { id: "tricks", name: "Seventy-Two Tricks", tagline: "Slip in, cheat fate, vanish. Outplay rather than outfight.",
+    crest: ["fortune", "time"], stats: { Damage: 2, Survival: 1, Mobility: 3 },
+    gems: { Q: ["fortune", "time"], W: ["mobility", "time"], E: ["fortune"], R: ["space", "time"] } },
+];
+const MANUAL = { id: "manual", name: "Manual mode", tagline: "No auto-build. Choose every gem for every ability yourself as you level up." };
+
+const gemSrc = (type, tier = 2) => `assets/t${tier}_${type}.png`;
+const cap = (s) => s[0].toUpperCase() + s.slice(1);
+const pathById = (id) => PATHS.find((p) => p.id === id) || (id === "manual" ? MANUAL : null);
+
+const screen = document.querySelector(".screen");
+const bind = (k) => screen.querySelector(`[data-bind="${k}"]`);
+const ab = (a) => `<span class="ab"><img src="${a.icon}" alt=""><b>${a.key}</b></span>`;
+const gems = (list, tier) => `<span class="gems">${list.map((t) => `<img src="${gemSrc(t, tier)}" alt="${cap(t)}" title="${cap(t)}">`).join("")}</span>`;
+const stats = (p) => `<div class="stats">${Object.entries(p.stats).map(([k, v]) =>
+  `<span>${k}</span><span class="pips">${[1, 2, 3].map((i) => `<i class="${i <= v ? "on" : ""}"></i>`).join("")}</span>`).join("")}</div>`;
+
+function render() {
+  bind("body").innerHTML = `
+    <div class="hero">
+      <div class="hero__frame"><img class="hero__portrait" src="${HERO.portrait}" alt=""><img class="hero__crest" alt="" data-bind="heroCrest" hidden></div>
+      <h2>${HERO.name}</h2>
+      <div class="hero__abilities">${HERO.abilities.map((a) => `
+        <span class="hero__ab">${ab(a)}<span class="hero__gems" data-ability="${a.key}"></span></span>`).join("")}</div>
+    </div>
+    <div class="forks">
+      ${PATHS.map((p) => `
+        <button class="fork" data-path="${p.id}" data-pick="${p.id}" aria-pressed="false">
+          ${gems(p.crest, 3)}<h3>${p.name}</h3>${stats(p)}
+        </button>`).join("")}
+      <button class="fork fork--manual" data-path="manual" data-pick="manual" aria-pressed="false">
+        <span class="gems"><img src="assets/t1_unknown.png" alt=""></span><h3>${MANUAL.name}</h3>
+      </button>
+    </div>
+    <div class="detail" data-bind="detail"></div>`;
+  preview(null);
+}
+
+// the detail pane (and, in the hero-preview experiment, the hero column) show the hovered path, else the selected one
+function preview(hoverId) {
+  const p = pathById(hoverId || screen.dataset.selected);
+  const el = bind("detail");
+
+  const crest = bind("heroCrest");
+  crest.hidden = !p?.crest;
+  if (p?.crest) crest.src = gemSrc(p.crest[0], 3);
+  screen.querySelectorAll(".hero__gems").forEach((g) => {
+    const list = p?.gems?.[g.dataset.ability] || (p ? ["?"] : []);
+    g.innerHTML = list.map((t) => `<img src="${t === "?" ? "assets/t1_unknown.png" : gemSrc(t)}" alt="">`).join("");
+  });
+
+  if (!p) { el.removeAttribute("data-path"); el.innerHTML = `<p class="detail__empty">Hover a path to preview its build</p>`; return; }
+  el.dataset.path = p.id;
+  el.innerHTML = `
+    ${p.crest ? `<img class="detail__crest" src="${gemSrc(p.crest[0], 3)}" alt="">` : ""}
+    <h2>${p.name}</h2>
+    <p class="detail__tag">${p.tagline}</p>
+    ${p.stats ? stats(p) : ""}
+    <div class="detail__rows">${HERO.abilities.map((a) => `
+      <div class="detail__row">${ab(a)}<strong>${a.name}</strong>
+        <span class="gems">${(p.gems ? p.gems[a.key] : ["?"]).map((t) => t === "?"
+          ? `<span class="detail__gem"><img src="assets/t1_unknown.png" alt="">Your pick</span>`
+          : `<span class="detail__gem"><img src="${gemSrc(t)}" alt="">${t}</span>`).join("")}</span>
+      </div>`).join("")}
+    </div>`;
+}
+
+function select(id) {
+  screen.dataset.selected = id;
+  screen.querySelectorAll("[data-pick]").forEach((el) => el.setAttribute("aria-pressed", el.dataset.pick === id));
+  bind("confirm").disabled = false;
+  bind("confirm").textContent = id === "manual" ? "Confirm manual mode" : "Confirm path";
+  bind("hint").innerHTML = `Selected: <b>${pathById(id).name}</b>`;
+  preview(null);
+}
+
+function reset() {
+  delete screen.dataset.selected;
+  screen.dataset.state = "choosing";
+  bind("confirm").disabled = true;
+  bind("confirm").textContent = "Confirm";
+  bind("hint").textContent = "Choose a path to continue";
+  render();
+}
+
+screen.addEventListener("click", (e) => {
+  const pick = e.target.closest("[data-pick]");
+  if (pick && screen.dataset.state === "choosing") return select(pick.dataset.pick);
+  const btn = e.target.closest("[data-action]");
+  if (!btn) return;
+  const { action, exp } = btn.dataset;
+  if (action === "confirm") {
+    bind("toast").innerHTML = `Path locked in: <b>${pathById(screen.dataset.selected).name}</b>`;
+    screen.dataset.state = "confirmed";
+  }
+  if (action === "exp") {
+    const key = exp === "hero" ? "expHero" : "expRatings";
+    const on = screen.dataset[key] !== "on";
+    screen.dataset[key] = on ? "on" : "off";
+    btn.setAttribute("aria-pressed", on);
+  }
+  if (action === "reset") reset();
+});
+screen.addEventListener("mouseover", (e) => { const fork = e.target.closest(".fork"); if (fork) preview(fork.dataset.pick); });
+screen.addEventListener("mouseout", (e) => {
+  if (e.target.closest(".forks") && !e.relatedTarget?.closest(".forks")) preview(null);
+});
+screen.addEventListener("focusin", (e) => { const fork = e.target.closest(".fork"); if (fork) preview(fork.dataset.pick); });
+
+const fit = () => document.documentElement.style.setProperty("--fit", Math.min(innerWidth / 1920, innerHeight / 1080));
+addEventListener("resize", fit);
+fit();
+bind("heroChip").src = HERO.minimap;
+bind("sub").textContent = `${HERO.name} · ${HERO.blurb}`;
+reset();
+// deep links for reviews: ?pick=fury&hero=on&ratings=on
+const q = new URLSearchParams(location.search);
+if (q.get("hero") === "on") screen.querySelector('[data-exp="hero"]').click();
+if (q.get("ratings") === "on") screen.querySelector('[data-exp="ratings"]').click();
+if (q.get("pick")) select(q.get("pick"));
+</script>
+</body>
+</html>
